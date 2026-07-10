@@ -1,0 +1,47 @@
+name: ci
+
+# SENTINEL ships no runtime code, so its correctness is the correctness of its
+# cross-references — and its credibility depends on not leaking its own secrets.
+# Both are enforced here, on every change. See .github/workflows/ci.md for the
+# reusable security workflow this repo recommends to the projects it audits.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    name: Structural integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Dead links, dead anchors, catalog <-> remediation class parity, and
+      # credential-shaped strings. Standard library only; no install step.
+      - name: Check repository invariants
+        run: python scripts/check_repo.py
+
+  secret-scan:
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan every commit, not just the diff
+
+      # Free for personal accounts (public and private). Organization-owned repos
+      # need GITLEAKS_LICENSE. If that blocks you, the structure job's secret
+      # check still covers the tracked Markdown.
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

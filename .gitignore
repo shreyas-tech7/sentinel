@@ -1,0 +1,49 @@
+# ---------------------------------------------------------------------------
+# Secrets — NEVER commit these. This repo audits apps for leaked credentials;
+# it must not leak its own. .env* files stay local, always.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+service-account*.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+dist/
+build/
+coverage/
+.next/
+out/
+.turbo/
+.vercel/
+
+# Supabase local
+.branches/
+.temp/
+supabase/.temp/
+
+# Python (scripts/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor / OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~

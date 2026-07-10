@@ -1,0 +1,8 @@
+# Normalize to LF in the repository. The CI runner is Linux; the scripts and
+# workflows must not arrive there with CRLF line endings.
+* text=auto eol=lf
+
+*.py   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.md   text eol=lf
