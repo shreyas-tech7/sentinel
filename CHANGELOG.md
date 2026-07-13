@@ -8,6 +8,62 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] — 2026-07-13
+
+Broadens SENTINEL from a Next.js/Supabase-plus-LLM tool into a framework for **any language, framework,
+or artifact type** — while keeping the six-phase workflow, the STRIDE core, the severity/confidence
+rubrics, and the report template exactly as they were. Nothing in v2.1.0's voice or output format was
+replaced; v3.0 adds lenses and reference depth on top. This is a MAJOR bump because Phase 0 gains a new
+job (artifact classification) and the report gains an optional audience mode — both extensions, not
+rewrites — and because the reference layout changed (see "Restructured").
+
+### Added
+- **Five vulnerability classes** (40 → 45), each with a matching fail-closed remediation:
+  - `SENT-INJ-09` — unsafe deserialization of untrusted data (`pickle`, `yaml.load`, `unserialize`,
+    `Marshal.load`), and `SENT-INJ-10` — path traversal / unsafe file-path handling (incl. zip slip,
+    PHP file inclusion, CLI `--output` escapes).
+  - `SENT-ASYNC-03` — non-idempotent webhook and queue consumers (at-least-once redelivery double-fires
+    the side effect; a signed event is still replayable).
+  - `SENT-PLAT-01` — overscoped platform permissions and privileges (extension manifests, bot intents,
+    mobile grants, CLI `sudo`), and `SENT-PLAT-02` — unvalidated cross-context messages (`postMessage`
+    origin, extension `sender`, deep links, Electron IPC). These form a new catalog category **I —
+    Platform & artifact boundaries** and a new Phase 3 scan group I.
+- **Phase 0 artifact-type classification.** Before assuming "web app with routes," Phase 0 now classifies
+  the target (web app, backend API, mobile, browser extension, chat bot, CLI, desktop) and routes the
+  audit through the matching playbook; mixed artifacts (mobile app + backend) are audited as both with a
+  shared trust-boundary map. Phase 0 also formalizes the mechanical inventory (dependency map, entry-point
+  table, data-flow sketch) as compact tables.
+- **Non-AI-app decoupling.** Phase 3 section D (AI/LLM features) is now explicitly conditional: it runs
+  only when Phase 0 detects an actual LLM/agent integration, and the report says so plainly when it's
+  skipped. Sections A–C and E–I always run. A `SKILL.md` clarifier states that "vibe-coded" describes how
+  code was built, not whether it has AI features — a plain CRUD app is fully in scope.
+- **Re-audit (regression delta) mode.** On request after remediation, Phase 4 re-runs the full audit and
+  presents a delta over the standard template — *Resolved / Still open / Newly introduced* — with explicit
+  scrutiny for bugs introduced by the fixes themselves.
+- **Plain-English Executive Brief** (dual-audience output). An optional translation layer over the same
+  analysis for non-technical audiences: a single "is this safe to ship" answer, findings restated with
+  real-world analogies, grouped "Fix before launch" / "Worth doing, not urgent." The technical report stays
+  the default and remains available; the rubric underneath is never softened to produce the brief.
+- **New stack playbooks** — Python (Django/Flask/**FastAPI**), **Firebase** (Firestore/RTDB rules — the
+  direct equivalent of RLS misconfiguration), **PHP** (Laravel/WordPress), and **Node+Mongo** (NoSQL
+  operator injection). Existing Supabase, Next.js, serverless/edge, LLM/RAG, Rails, Go, and mobile
+  playbooks were carried over and polished.
+- **New reference `artifact-playbooks.md`** — entry-point maps, traps, and tests for browser extensions,
+  chat bots, CLI tools, and desktop/Electron apps, where "route handler" is the wrong model.
+- **Async scan (category F) extended** with stale closures over shared mutable state, improper listener/
+  timer/subscription cleanup, and webhook/queue idempotency.
+
+### Restructured
+- **`references/stack-playbooks.md` is now an index** into `references/stack-playbooks/`, one file per
+  stack, so an audit loads only the playbook it needs. All prior playbook content is preserved; the file
+  that used to hold everything now holds the table of contents and the "adding a playbook" guidance.
+
+### Unchanged (deliberately)
+- The six-phase workflow, the STRIDE step, the report output template, the Critical/High/Medium/Low
+  severity rubric, the separate confidence rubric, the evidence standard (source · sink · missing control ·
+  falsifier), and the read-only / report-only default. The three `examples/` reports remain in their
+  original v1.0.0 format, labeled as such.
+
 ## [2.1.0] — 2026-07-10
 
 Closes the coverage gaps that the v2 threat model implied but no vulnerability class caught — most
@@ -113,6 +169,7 @@ around it.
 - **Governance** — MIT license, security policy, contribution guide, code of conduct, issue
   templates, and CI notes.
 
+[3.0.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v3.0.0
 [2.1.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v2.1.0
 [2.0.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v2.0.0
 [1.0.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v1.0.0

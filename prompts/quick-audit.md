@@ -39,6 +39,11 @@ For the code I give you:
      the request Host header.
    - Race conditions on non-atomic state; missing rate limit on a heavy/metered operation; SSRF on a
      server-side fetch of a user URL; insecure file upload.
+   - Unsafe deserialization (pickle / yaml.load / unserialize on untrusted input); path traversal (user
+     input in a file path with no resolve-then-containment check); NoSQL operator injection ($ne/$where
+     from a JSON body). Webhook/queue handler that isn't idempotent — a replayed delivery double-fires.
+   - If it's an extension / bot / CLI / desktop artifact: overscoped permissions, and any message or
+     deep-link / IPC handler acting on a sender it never validates (origin, sender.id, URI params).
    - Exposed secrets (hard-coded, NEXT_PUBLIC_ on a secret, service-role key reachable by the client);
      unverified webhook signature; permissive CORS / missing headers.
    - Weak crypto — passwords hashed with md5/sha1/sha256 instead of a slow salted KDF; a value that

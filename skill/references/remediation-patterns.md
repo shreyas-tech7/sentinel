@@ -599,6 +599,76 @@ Allow-list, never deny-list: a deny-list (`delete user.password`) silently fails
 the same guarantee one level lower. For GraphQL, authorize per field — an unqueried field is still
 queryable.
 
+### SENT-INJ-09 — Deserialize with data-only formats and safe loaders
+
+Prefer a format that *cannot* construct objects (JSON); where the format is fixed, use its safe loader.
+
+```python
+# ❌ Before — both lines execute attacker code during parsing, before any validation runs.
+config = yaml.load(open(path))          # full YAML can instantiate arbitrary Python objects
+model = pickle.loads(uploaded_bytes)    # pickle is code execution by design
+
+# ✅ After — safe_load builds only plain data (dicts, lists, scalars); validate the shape after.
+import yaml
+config = yaml.safe_load(open(path))     # or yaml.load(f, Loader=yaml.SafeLoader)
+
+# ✅ For untrusted "model" or data files: a data-only format, never pickle.
+import json
+payload = json.loads(uploaded_bytes)    # parsing cannot execute anything
+```
+
+```php
+// ❌ Before — unserialize() on user input instantiates attacker-chosen classes (POP chains).
+$prefs = unserialize($_COOKIE['prefs']);
+
+// ✅ After — JSON carries the same data and cannot instantiate anything.
+$prefs = json_decode($_COOKIE['prefs'], true, 8);   // assoc arrays, bounded depth
+if (!is_array($prefs)) { $prefs = []; }             // fail closed on malformed input
+```
+
+If a code-capable format is truly unavoidable (a trusted internal pipeline), sign the payload and
+verify before deserializing — authenticity first, parsing second. "The file comes from our own
+config" is not trust: anything another user, download, or repository can write is untrusted input.
+
+### SENT-INJ-10 — Resolve, then verify containment, before touching a path
+
+`join` builds a path; it does not confine one. Resolve to an absolute path, then check the prefix.
+
+```ts
+// ❌ Before — ?file=../../.env walks out of the directory; join() doesn't stop it.
+const filePath = path.join(UPLOADS_DIR, req.query.file as string);
+return fs.createReadStream(filePath);
+```
+
+```ts
+// ✅ After — resolve first, then require the result to still be inside the base directory.
+import path from 'node:path';
+
+const base = path.resolve(UPLOADS_DIR);
+const resolved = path.resolve(base, req.query.file as string);
+// path.sep suffix stops prefix tricks like /srv/uploads-secret matching /srv/uploads
+if (!resolved.startsWith(base + path.sep)) {
+  return new Response('Not found', { status: 404 });  // fail closed; don't echo the path
+}
+return fs.createReadStream(resolved);
+```
+
+```python
+# ✅ Python — same shape: resolve, then containment check. Works for CLI --output paths too.
+from pathlib import Path
+
+base = Path(allowed_dir).resolve()
+target = (base / user_supplied).resolve()
+if not target.is_relative_to(base):          # Python 3.9+
+    raise SystemExit("refusing to write outside the output directory")
+target.write_bytes(data)
+```
+
+Better still, remove the filename from the trust equation: store uploads under a server-generated id
+(`uuid4()`) and keep the client's original name as display metadata only. For archive extraction,
+apply the same containment check to every entry before writing (zip slip). PHP `include` with any
+user-controlled segment should become a dispatch table — an allow-list of the includable names.
+
 ---
 
 ## Secrets, configuration & dependencies
@@ -1082,6 +1152,51 @@ idempotency key — the client half is UX, the server half is the control. For d
 the atomic-statement patterns in [SENT-INJ-04](#sent-inj-04--make-the-operation-atomic); for
 cross-process state, a transaction or advisory lock beats any in-process mutex.
 
+### SENT-ASYNC-03 — Record the event id atomically, before the side effect
+
+Let the database's unique constraint be the dedupe — an atomic insert, not a read-then-act check.
+
+```sql
+-- One row per event the system has ever accepted. The primary key IS the idempotency control.
+create table processed_events (
+  event_id     text primary key,      -- the provider's event id (evt_..., message id, delivery id)
+  processed_at timestamptz not null default now()
+);
+```
+
+```ts
+// ❌ Before — every delivery of evt_123 grants the credits again. Retries are normal, not hostile.
+export async function POST(req: Request) {
+  const event = verifySignature(await req.text(), req.headers); // SENT-SECRET-04 handled — not enough
+  await grantCredits(event.data.userId, event.data.amount);     // fires once PER DELIVERY
+  return new Response('ok');
+}
+```
+
+```ts
+// ✅ After — claim the event id first; exactly one delivery wins the insert, the rest exit early.
+export async function POST(req: Request) {
+  const event = verifySignature(await req.text(), req.headers);
+
+  const { rowCount } = await db.query(
+    // Atomic: two concurrent deliveries of the same event cannot both insert.
+    // A SELECT-then-INSERT here would just re-open the race (SENT-INJ-04).
+    'insert into processed_events (event_id) values ($1) on conflict do nothing',
+    [event.id],
+  );
+  if (rowCount === 0) return new Response('duplicate delivery', { status: 200 }); // 200: stop retries
+
+  await grantCredits(event.data.userId, event.data.amount);
+  return new Response('ok');
+}
+```
+
+If the handler crashes *after* claiming the id but *before* the side effect, the event is lost — so
+either do the claim and the side effect in one transaction, or claim-then-act and reconcile from the
+provider's event log. For outbound calls, pass the same event id as the provider's idempotency key
+(`stripe.charges.create(..., { idempotencyKey: event.id })`) so your retry can't double-charge either.
+Queue consumers: same pattern, keyed on the message id, and ack only after the transaction commits.
+
 ---
 
 ## Cryptography & randomness
@@ -1294,6 +1409,83 @@ password and payment fields.
 **If a live secret has already been logged, the fix is rotation.** Deleting the log line does not
 un-disclose it; treat it as
 [SENT-SECRET-01](#sent-secret-01--keep-secrets-server-side).
+
+---
+
+## Platform & artifact boundaries
+
+### SENT-PLAT-01 — Request the narrowest grant the feature needs
+
+Work backwards from the feature list: every permission in the manifest must be traceable to a feature,
+and everything else goes.
+
+```jsonc
+// ❌ Before — manifest.json: a "highlight prices on shop.example" extension holding the whole browser.
+{
+  "manifest_version": 3,
+  "permissions": ["tabs", "cookies", "history", "webRequest", "storage"],
+  "host_permissions": ["<all_urls>"]
+}
+```
+
+```jsonc
+// ✅ After — only what the feature uses: one host, storage for settings, activeTab for the click case.
+{
+  "manifest_version": 3,
+  // "activeTab" grants the current tab only, only on user gesture — it replaces most "tabs" uses.
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://shop.example/*"]
+}
+```
+
+The same audit works on every artifact type: a Discord bot's invite URL carries its permission integer
+— replace `permissions=8` (Administrator) with the computed sum of the specific permissions the
+commands use, and enable only the gateway intents the handlers read. Mobile: delete every manifest
+permission the code never exercises, and set `android:exported="false"` on components nothing external
+invokes. CLI: if the tool touches only user-owned files, remove the `sudo` from the README — and if
+one subcommand genuinely needs elevation, isolate that subcommand instead of elevating the whole tool.
+
+### SENT-PLAT-02 — Verify the sender before acting on any message
+
+Treat every message channel as an entry point: authenticate the sender, validate the payload, and
+scope the reply.
+
+```ts
+// ❌ Before — any page, iframe, or window with a reference can drive this handler.
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'SAVE_TOKEN') saveToken(event.data.token);
+});
+```
+
+```ts
+// ✅ After — allow-list the origin first, validate the shape second, and never reply to '*'.
+const TRUSTED_ORIGIN = 'https://app.example.com';
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== TRUSTED_ORIGIN) return;          // the security check
+  if (typeof event.data?.token !== 'string') return;    // then the shape check
+  if (event.data.type === 'SAVE_TOKEN') saveToken(event.data.token);
+});
+// Replying: event.source.postMessage(reply, TRUSTED_ORIGIN) — an explicit target, never '*'.
+```
+
+```ts
+// ✅ Extension service worker — trust only your own pages, not arbitrary senders.
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // Messages relayed from content scripts carry the PAGE's intent — a hostile site can make its
+  // content script say anything. Gate privileged work on sender.id (your extension's own UI pages).
+  if (sender.id !== chrome.runtime.id || sender.tab) {
+    sendResponse({ error: 'unauthorized sender' });
+    return;
+  }
+  if (msg.type === 'GET_SESSION') sendResponse({ session: readSession() });
+});
+```
+
+Deep links and custom schemes get the same treatment: parse the URI, validate every parameter against
+an allow-list, and re-authenticate before any sensitive screen or state change — the sender may be any
+app on the device. Electron: keep `contextIsolation: true`, expose narrow, argument-validating
+functions via `contextBridge`, and treat every `ipcMain.handle` argument as attacker-controlled.
 
 ---
 

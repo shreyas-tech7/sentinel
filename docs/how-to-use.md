@@ -25,7 +25,9 @@ automatically when you ask about security, or you can name it.
    ├── SKILL.md
    └── references/
        ├── vulnerability-catalog.md
-       ├── stack-playbooks.md
+       ├── stack-playbooks.md          # index into stack-playbooks/
+       ├── stack-playbooks/            # one file per stack (generic, supabase, nextjs, python, …)
+       ├── artifact-playbooks.md       # extensions, bots, CLIs, desktop apps
        ├── remediation-patterns.md
        └── tooling.md
    ```

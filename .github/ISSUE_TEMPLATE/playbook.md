@@ -9,8 +9,9 @@ assignees: ''
 <!--
 Playbooks encode the sharp edges of a specific stack. The methodology already generalizes; a
 playbook just tells the reviewer where THIS stack tends to bleed and how to test it.
-Follow the four-part shape in stack-playbooks.md. See CONTRIBUTING.md → "How to add a stack
-playbook".
+Follow the four-part shape used in the stack-playbooks/ files. See CONTRIBUTING.md → "How to add a
+stack playbook". (For a non-web artifact type — extension, bot, CLI, desktop — propose it for
+artifact-playbooks.md instead, leading with an entry-point map.)
 -->
 
 ## Stack / framework

@@ -1,10 +1,10 @@
 # SENTINEL
 
-**A defensive, methodology-driven security audit framework for AI-generated and rapidly prototyped web
-apps.**
+**A defensive, methodology-driven security audit framework for AI-generated and rapidly prototyped
+software — any language, any framework, any artifact type.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.0.0-informational.svg)](CHANGELOG.md)
 [![Use: defensive only](https://img.shields.io/badge/use-defensive%20only-important.svg)](SECURITY.md)
 
 SENTINEL is a persona and a fixed six-phase workflow that audits source code the way a careful staff
@@ -13,11 +13,20 @@ input to its sinks, check whether successive AI iterations eroded earlier contro
 severity-rated findings with drop-in secure code. It is tuned for the specific ways "vibe-coded" apps
 fail — the code works, and is insecure, and the insecurity hides in idiomatic-looking code.
 
+**"Vibe-coded" is about *how* the code was built — rapid, AI-assisted, iteration over review — not
+whether the product has AI features.** A plain CRUD app written entirely by an AI assistant is exactly
+as in-scope as a RAG chatbot; the AI/LLM checks only switch on when the target actually integrates a
+model. SENTINEL audits web apps and backends, and — as of v3.0 — mobile apps, browser extensions, chat
+bots, CLI tools, and desktop apps, each through the entry-point model that fits it. When the audience
+is a non-technical founder, it can deliver a plain-English "is this safe to launch" brief over the same
+analysis.
+
 It runs as a [Claude Code / Cursor skill](docs/how-to-use.md), or as a
 [standalone prompt](prompts/sentinel-master-prompt.md) you paste into any chat model. The methodology is
 framework-agnostic; the [playbooks](skill/references/stack-playbooks.md) open with a generic checklist
-for any stack, then go sharp on Supabase, Next.js, serverless/edge, LLM/RAG, Django/Flask, Rails, Go,
-and React Native/Flutter.
+for any stack, then go sharp on Supabase, Next.js, serverless/edge, LLM/RAG, Python (Django/Flask/
+FastAPI), Firebase, Rails, PHP (Laravel/WordPress), Node+Mongo, Go, and mobile — with separate
+[artifact playbooks](skill/references/artifact-playbooks.md) for extensions, bots, CLIs, and desktop apps.
 
 ---
 
@@ -42,8 +51,9 @@ control should be there. That's what a methodology gives you and a linter doesn'
 A **persona** (SENTINEL, a senior application-security engineer) driving a **fixed six-phase workflow** —
 not a linter, and not a checklist you eyeball:
 
-0. **Pre-audit inventory** — map the module structure, detect AI-authorship signals, and calibrate how
-   skeptical the rest of the audit should be.
+0. **Pre-audit inventory** — map dependencies and entry points, classify the artifact type (web, mobile,
+   extension, bot, CLI, desktop), detect AI-authorship signals, and calibrate how skeptical the rest of
+   the audit should be.
 1. **Establish context & trust boundaries** — map the stack, what runs client vs server, where untrusted
    data crosses into trusted zones, and where the high-value assets are.
 2. **STRIDE threat model** — enumerate threats at each boundary, ranked by blast radius.
@@ -139,28 +149,33 @@ scanner's rules did not match.
 Grouped below; the [catalog](skill/references/vulnerability-catalog.md) has detection guidance, OWASP/CWE
 classification, and a cross-linked fix for each.
 
-Forty classes across eight groups:
+Forty-five classes across nine groups:
 
 - **Authorization** — broken object-level authorization / [IDOR](skill/references/vulnerability-catalog.md#sent-authz-01--broken-object-level-authorization--idor),
   broken function-level authorization, middleware-only enforcement, missing auth on Server Actions /
   Route Handlers, insecure sessions & claims, auth-redirect / OAuth-callback flaws, insecure password
   reset, [CSRF](skill/references/vulnerability-catalog.md#sent-authz-09--cross-site-request-forgery-csrf), and
-  [missing database-layer access control (RLS)](skill/references/vulnerability-catalog.md#sent-authz-07--missing-database-layer-access-control-rls-disabled-or-permissive).
-- **Injection & sinks** — SQL/command/code/template injection, XSS, mass assignment, excessive data
-  exposure, check-then-act race conditions, missing rate limits, insecure file upload, SSRF.
+  [missing database-layer access control (RLS / Firebase rules)](skill/references/vulnerability-catalog.md#sent-authz-07--missing-database-layer-access-control-rls-disabled-or-permissive).
+- **Injection & sinks** — SQL/command/code/template injection (incl. NoSQL operator injection), XSS, mass
+  assignment, excessive data exposure, check-then-act race conditions, missing rate limits, insecure file
+  upload, SSRF, unsafe deserialization, and path traversal.
 - **Secrets & config** — hard-coded and client-exposed secrets (`NEXT_PUBLIC_` leakage, bundle
   serialization), permissive CORS, missing security headers, public storage buckets, unverified webhooks.
 - **Supply chain** — unpinned/unmaintained dependencies, and hallucinated or typosquatted packages.
 - **LLM & agents** — prompt injection, improper output handling, excessive agency, denial-of-wallet on
   metered model APIs, secrets/authz in prompts (the system-prompt-as-boundary fallacy), and RAG issues
-  (poisoned retrieval, non-row-scoped vector stores).
+  (poisoned retrieval, non-row-scoped vector stores). *Runs only when the target integrates a model.*
 - **Architecture & structure** — dead code masking a security control, orphan state and missing cleanup,
   cosmetic abstractions, context-window pattern abandonment, and the security-focused regression trap.
-- **Async logic & state** — swallowed async errors that fail open, non-atomic writes to shared state.
+- **Async logic & state** — swallowed async errors that fail open, non-atomic writes to shared state, and
+  non-idempotent webhook / queue consumers (double-charge on redelivery).
 - **Cryptography & randomness** — weak or absent credential hashing, and predictable randomness in the
   values that grant access (reset tokens, session ids, invite codes).
 - **Logging & audit trail** — no durable record of privileged or financial actions (the STRIDE
   *repudiation* leg), and secrets or PII written into logs and telemetry.
+- **Platform & artifact boundaries** — overscoped platform permissions (extension manifests, bot intents,
+  mobile grants, CLI privilege), and unvalidated cross-context messages (`postMessage`, extension message
+  passing, deep links, Electron IPC).
 
 ## Quickstart
 
@@ -215,7 +230,8 @@ welcome — the bar is that every addition be defensible and defensive. See
 sentinel/
 ├── skill/                 # the drop-in Claude/Cursor skill (methodology + references)
 │   ├── SKILL.md
-│   └── references/        # vulnerability catalog · stack playbooks · remediation patterns · tooling
+│   └── references/        # vulnerability catalog · remediation patterns · tooling · artifact playbooks
+│       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, firebase, …)
 ├── prompts/               # standalone master prompt + quick single-file variant
 ├── docs/                  # methodology · threat modeling · Supabase RLS guide · how-to-use
 ├── examples/              # three redacted example audits

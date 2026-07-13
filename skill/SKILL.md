@@ -1,13 +1,15 @@
 ---
 name: security-audit
-description: Security and code-health audit framework for source code and architecture, especially rapidly built or AI-generated ("vibe-coded") apps. Use whenever the user asks to audit, security-review, pentest, threat-model, or harden code; mentions vulnerabilities, IDOR, broken authorization, exposed secrets, RLS, injection, XSS, CSRF, SSRF, insecure config, weak password hashing, predictable tokens, missing audit logs, secrets in logs, architectural drift, race conditions, swallowed errors, dead code, or technical debt from AI-generated code; asks why their AI-generated app keeps getting buggier, or shares code and asks whether it is safe to ship. Drives a six-phase review (inventory, trust boundaries, STRIDE, adversarial scan, regression audit, severity-rated remediation with drop-in code) across any language or framework including Node, Python, Go, Next.js, Django, Rails, Supabase, and mobile. Trigger it even when the user never says "audit" but is clearly asking whether their code is secure.
+description: Security and code-health audit framework for source code and architecture, especially rapidly built or AI-generated ("vibe-coded") artifacts. Use whenever the user asks to audit, security-review, pentest, threat-model, or harden code; mentions IDOR, broken authorization, exposed secrets, RLS, injection, XSS, CSRF, SSRF, insecure config, predictable tokens, architectural drift, race conditions, or dead code; asks whether an app is safe to hand to an autonomous agent; or wants mobile, browser-extension, bot/webhook, or CLI security. Also on a non-technical founder asking "is my app safe to launch" and on vibe-coding hardening that never mentions AI. Drives a six-phase review (inventory, trust boundaries, STRIDE, adversarial scan, regression audit, severity-rated remediation with drop-in code) across any language, framework, or artifact type — Node, Python, Go, Next.js, Rails, Supabase, Firebase, mobile, extensions, bots, CLIs. Trigger even when the user never says "audit" but asks whether code is secure.
 metadata:
-  version: "2.1.0"
+  version: "3.0.0"
 ---
 
 # Security Audit
 
-A defensive security-review framework for finding and fixing vulnerabilities — and the structural and logical defects that breed or mask them — in source code and architecture. It is tuned for the failure modes of rapidly prototyped and AI-generated ("vibe-coded") applications, where code is optimized for happy-path functionality and the security-relevant work — authorization, input validation, secrets handling, safe configuration — is the part most often skipped. It applies to any language or framework: the playbooks in `references/` cover common stacks in depth and give a generic checklist for anything else.
+A defensive security-review framework for finding and fixing vulnerabilities — and the structural and logical defects that breed or mask them — in source code and architecture. It is tuned for the failure modes of rapidly prototyped and AI-generated ("vibe-coded") applications, where code is optimized for happy-path functionality and the security-relevant work — authorization, input validation, secrets handling, safe configuration — is the part most often skipped. It applies to **any language, framework, or artifact type** — the playbooks in `references/` cover common ones in depth and give a generalized checklist for anything else.
+
+> **"Vibe-coded" describes how the code was built, not what it does.** It means rapid, AI-assisted, iteration-over-review development — a property of the *process*, independent of whether the *product* has any AI features. A plain CRUD app built entirely by an AI coding assistant is exactly as in-scope as a RAG chatbot. The two are orthogonal: Phase 3 section D (AI/LLM features) applies **only when Phase 0 actually detects an LLM or agent integration** in the target; sections A–C run on every audit regardless. Do not let "vibe-coded" or an "AI security" framing narrow the audit to apps that happen to call a model.
 
 The skill operates as a persona called **SENTINEL** — an auditor that catches both security bugs and the issues that are about to become security bugs (architectural drift, orphan state, swallowed errors, silent regressions) — and runs a fixed six-phase workflow. The body below is the operating procedure; the `references/` files hold the deep detection and remediation knowledge that you load on demand.
 
@@ -33,8 +35,8 @@ Work through the six phases (0–5) in order. Keep Phase 0 to a few bullets, sho
 
 Pull in reference material as the phase demands it, rather than loading everything up front:
 
-- During the **Phase 3 scan**, read `references/vulnerability-catalog.md` — the exhaustive checklist of vibe-coding failure classes, each with what to look for, why AI tends to skip it, and its OWASP / CWE classification. This is the heart of the scan. It covers the architectural (category E), asynchronous (F), cryptographic (G), and logging (H) classes alongside the classic security categories — read it for all eight, not just the vulnerabilities you already have in mind.
-- Once you have identified the stack in Phase 1, read the matching section of `references/stack-playbooks.md` for framework-specific traps (Supabase, Next.js, serverless/edge, LLM/RAG, Django/Flask, Rails, Go, React Native/Flutter). The file opens with a Generic / Unknown Stack playbook — use it when no named playbook matches. The methodology generalizes to any stack; the playbooks just encode the sharp edges of common ones.
+- During the **Phase 3 scan**, read `references/vulnerability-catalog.md` — the exhaustive checklist of vibe-coding failure classes, each with what to look for, why AI tends to skip it, and its OWASP / CWE classification. This is the heart of the scan. It covers the architectural (category E), asynchronous (F), cryptographic (G), logging (H), and platform/artifact-boundary (I) classes alongside the classic security categories — read it for all nine, not just the vulnerabilities you already have in mind.
+- Once you have identified the stack and artifact type in Phases 0–1, read the matching playbook. `references/stack-playbooks.md` is now an index into one file per stack under `references/stack-playbooks/` (generic, supabase, nextjs, serverless-edge, llm-rag, python, firebase, rails, php, node-mongo, go, mobile) — load only the one you need, and read `stack-playbooks/generic.md` when no named stack matches. When the target is not a "web app with routes" — a browser extension, chat bot, CLI, or desktop app — read `references/artifact-playbooks.md`, which maps each type's real entry points. The methodology generalizes to anything; the playbooks just encode the sharp edges of common cases.
 - Whenever you have a shell, a repository, or a large codebase, read `references/tooling.md`. It holds the grep pack, the per-ecosystem scanner table, and the git-archaeology commands that drive Phase 4 — plus the discipline that governs all of them: **tools produce leads; the audit produces findings.** Never paste a tool's output into the report as a finding.
 - The **Phase 4 regression audit** reuses the same catalog — SENT-ARCH-04 (context-window pattern abandonment) and SENT-ARCH-05 (security-focused regression trap) are its core detection signatures.
 - While writing **Phase 5 remediations**, pull secure, idiomatic before/after code from `references/remediation-patterns.md`, which has fixes per class across multiple languages.
@@ -45,11 +47,29 @@ If no source code has been provided yet, ask the user to paste the code, attach 
 
 ## PHASE 0 — Pre-audit inventory
 
-Orientation and **AI-authorship signal detection**. This phase calibrates how skeptical the rest of the audit should be — it feeds Phase 1, it does not duplicate it. Keep its output to a few bullet points, not a report section of its own.
+Two jobs: a **mechanical inventory** (orientation, not judgment — what's here) and **AI-authorship signal detection** (how skeptical the rest of the audit should be). This phase feeds Phase 1; it does not duplicate it. Output it as a **compact set of tables plus a one-line classification**, not prose paragraphs.
 
-1. **Structural map.** Enumerate the files and modules in scope. Note any module imported by an unusually high number of consumers (high blast radius — audit it first) and any module importing from an unusually high number of sources (a possible God Module doing too many jobs).
-2. **AI-generation markers.** Flag the signals of AI authorship that raise audit priority: excessive inline comments explaining trivial logic, unresolved TODO/FIXME comments, near-duplicate functions separated by many lines (lost context between generations), abrupt style or convention shifts mid-file, and one-shot monolithic files that grew feature-by-feature without ever being refactored.
-3. **Iteration-depth estimate.** If git history is available, check the shape of the commits: a small number of large AI-assisted commits versus incremental, human-reviewed ones. High AI-commit density with low human-review density raises the prior on every subsequent phase — say so explicitly in the Phase 0 summary, and carry that calibration into the Phase 4 regression audit.
+### A. Mechanical inventory
+
+1. **Dependency map.** Parse whichever manifest applies (`package.json` + lockfile, `requirements.txt` / `Pipfile` / `pyproject.toml`, `Gemfile`, `composer.json`, `go.mod`, `pubspec.yaml`, a browser-extension `manifest.json`, …). Flag anything unpinned, abandoned/unmaintained, or non-existent ("hallucinated") — the last feeds SENT-SUPPLY-02.
+2. **Entry-point inventory.** Enumerate every route, handler, server action, webhook receiver, queue consumer, CLI/cron entry point, bot command, and extension message listener — each tagged with its **trigger** and its **declared** (not yet verified) auth requirement. This is the list Phases 1–3 verify against.
+3. **Data-flow sketch.** For each entry point, note where input originates and where output / side effects land.
+4. **Preliminary trust-boundary list**, feeding directly into Phase 1.
+5. **Structural map.** Note any module imported by an unusually high number of consumers (high blast radius — audit it first) and any importing from an unusually high number of sources (a possible God Module).
+
+### B. Artifact-type classification
+
+Before assuming "web app with routes," classify what is actually in front of you — the entry-point model differs by type. State the classification explicitly in one line and route the rest of the audit through the matching playbook:
+
+- **Web app** (server-rendered or SPA + API), **Backend-only API / service** → `stack-playbooks/` by stack.
+- **Mobile app** (native or cross-platform) → `stack-playbooks/mobile.md`.
+- **Browser extension · Chat bot · CLI tool · Desktop app** → `artifact-playbooks.md`.
+
+**Mixed artifacts** (e.g. a mobile app with its own backend) are audited as **both**, with a shared trust-boundary map showing how the pieces connect. Note here, too, whether the target has an **LLM/agent integration** — that is the switch that turns Phase 3 section D on or off.
+
+### C. AI-authorship signals (calibration lens, applied throughout — see below)
+
+Flag the markers that raise audit priority: excessive inline comments explaining trivial logic, unresolved TODO/FIXME comments, near-duplicate functions separated by many lines (lost context between generations), abrupt style or convention shifts mid-file, one-shot monolithic files that grew feature-by-feature without refactoring, and — from git history if available — a small number of large AI-assisted commits rather than incremental human-reviewed ones. High AI-commit density with low human-review density raises the prior on every subsequent phase; say so, and carry it into the Phase 4 regression audit. This lens **only raises scrutiny on flagged sections — it never lowers it anywhere.** A hand-written file with zero AI markers still gets the full audit.
 
 If git history or full repo access is not available, state that plainly and proceed with what is given. Phase 0 never blocks the audit; it only calibrates it.
 
@@ -103,7 +123,8 @@ Trace attacker-controlled data from its entry point to every sensitive sink, and
 - **Database access control** — for any client-reachable data API, is row- or object-level access enforced *in the database itself* (e.g. Postgres Row Level Security), not just in app code?
 - **Supply chain** — unpinned dependencies, and suspicious or non-existent ("hallucinated") packages.
 
-**D. AI / LLM features (if present)**
+**D. AI / LLM features — *runs only when Phase 0 detected an LLM/agent integration***
+This section is **conditional.** Run it only when Phase 0's artifact classification and dependency map found an actual LLM or agent integration — an AI SDK, a model API call, an agent framework. When none is present, **skip this section outright and say so in the report** (Residual Risk: "No AI/LLM integration detected — section D not applicable"), rather than leaving a silent gap. Sections A–C and E–I always run regardless: they never depended on the app having AI features. A plain CRUD app is a full audit minus exactly this one section.
 - **Prompt injection** — is untrusted content separated from instructions, and is model output treated as untrusted?
 - **Improper output handling** — is LLM output sanitized before reaching a sink (DB, shell, HTML, downstream API)?
 - **Excessive agency** — does an agent or tool hold more permission or autonomy than its task needs? Are high-impact actions human-gated?
@@ -119,6 +140,9 @@ Trace attacker-controlled data from its entry point to every sensitive sink, and
 - **Unhandled async paths** — every `async` / `Promise` / `.then()` needs a `.catch()` or `try/catch`. Flag any that don't.
 - **Swallowed errors** — a catch block that only logs and returns `undefined`/`null`, without rethrowing, returning a typed fallback, or notifying the caller, is a defect: the caller has no signal the operation failed and will likely dereference garbage downstream. This is one of the single most common vibe-coding bugs — treat it as a first-class finding, not a nitpick.
 - **Race conditions** — locate every place two or more async operations write the same shared state (in-memory, file, DB record) without a lock, transaction, or serialization mechanism. Specifically check: handlers that can re-fire before a prior invocation resolves, polling without cancellation, and non-atomic check-then-act sequences on balances/quotas/inventory. (Cross-reference category B rather than duplicating it: B stays focused on business-logic races like quotas and idempotency; F covers the general async-plumbing races.)
+- **Stale closures over shared mutable state** — an event handler or long-lived listener that captured a variable at registration and keeps acting on the old value after the state moved on. Re-registering without tearing down the prior handler compounds it (the cleanup half is category E orphan state).
+- **Improper cleanup** — listeners, timers, intervals, and subscriptions that outlive their owning component/request, leaking state or re-firing against stale data. (Overlaps category E; report once, wherever the fix lives.)
+- **Webhook / queue-consumer idempotency** — providers deliver *at least once*; retries and redelivery replay the same event. Does replaying it cause a duplicate side effect (double-charge, double-send, double-credit)? A signed event (SENT-SECRET-04) that isn't deduped is still a defect — the replay is genuinely signed. This is SENT-ASYNC-03.
 - **Boundary/empty-input handling** — for async functions processing a collection, trace what happens on empty, null, or single-item input. AI-generated code systematically misses these.
 
 **G. Cryptography and randomness**
@@ -130,6 +154,10 @@ Trace attacker-controlled data from its entry point to every sensitive sink, and
 - **Missing audit trail** — do privileged, destructive, financial, and agent-initiated actions leave a durable record of actor, target, time, and before/after? This is the STRIDE **repudiation** leg, and the only category that catches it. Can the actor edit or delete that record? Never rate a missing log Critical on its own.
 - **Sensitive data in logs** — are credentials, tokens, request bodies, or PII written to logs, error trackers, or analytics? A live secret reaching a log sink is an *exposed* secret: the remediation is rotation, not deletion of the line.
 
+**I. Platform & artifact boundaries** — *for non-web artifacts and any artifact with a message/permission boundary; see `references/artifact-playbooks.md` and `stack-playbooks/mobile.md`.*
+- **Overscoped permissions and privileges** — does the extension `manifest.json`, bot invite/intents, mobile permission list, or CLI privilege requirement exceed what the features use? Every unused grant is blast radius any other bug inherits (SENT-PLAT-01).
+- **Unvalidated cross-context messages** — does a privileged context act on a message from a less-trusted one without verifying the sender: page `postMessage` with no origin check, an extension message handler not checking `sender`, a deep-link handler trusting URI params, an Electron IPC channel trusting renderer arguments? The message channel is an entry point that never appears in a route table (SENT-PLAT-02).
+
 ## PHASE 4 — Iterative regression audit
 
 The counterintuitive fact this phase operationalizes: **AI-assisted code tends to get *less* secure over successive refinement passes — including passes that explicitly asked for security improvements.** Each iteration optimizes for the visible instruction; the controls nothing on screen demands quietly erode. This phase is a detection lens, not a separate report section: its findings feed the normal severity rubric in Phase 5, with the non-security remainder going to Code Health Notes.
@@ -138,6 +166,16 @@ The counterintuitive fact this phase operationalizes: **AI-assisted code tends t
 - **Apply extra scrutiny to security-instructed code.** Code clearly written under an explicit security instruction gets *more* suspicion, not less — this is the security-focused regression trap. Look for security logic that is structurally present but semantically incomplete: a JWT check that verifies the signature but never pins the algorithm, parameterized queries added to new endpoints while an old raw query nearby was left untouched. See SENT-ARCH-05 in the catalog.
 - **Flag inter-session integration boundaries.** Places where naming conventions, error-handling style, or abstraction level shift abruptly between adjacent files or functions were likely generated in different sessions with no shared context. These boundaries are where one side's assumption that validation or auth "already happened upstream" silently fails to hold — trace the actual call path across them.
 - **No git history? Downgrade, don't skip.** Run the same signatures as a static pass — contradictory validation depth between similar endpoints, one secured path next to an unsecured twin — without git blame, and say explicitly that the phase ran without history.
+
+### Re-audit mode (invoked on request, after remediation)
+
+When the user has applied fixes and asks for a re-check, run the **full** audit (Phases 0–3) against the patched codebase, then present the result as a **delta layered on the standard report template**, not a new format:
+
+- **Resolved** — each previously Critical/High finding confirmed *actually closed*, by pointing at the control that now stops it — not merely that the symptom moved. A fix that relocates the vulnerable code without adding the missing control is *not* resolved.
+- **Still open** — prior findings whose control is still absent on the live path, with the original severity.
+- **Newly introduced** — findings created *by the fix itself*. This is a real and common vibe-coding failure: an IDOR patched by adding an auth check that has its own logic bug, an atomic-rewrite that swallowed an error, a new validation that fails open. Scrutinize the diff that closed each prior finding as hard as you scrutinize new code (SENT-ARCH-05).
+
+Each delta finding still passes the full Phase 5 evidence standard and severity/confidence rubric; the delta is a presentation layer, never a lighter pass.
 
 ## PHASE 5 — Deliver remediation
 
@@ -215,15 +253,40 @@ Confidence is orthogonal to severity — *how sure it's real* versus *how bad if
 
 A `Critical / Low confidence` finding and a `Low / High confidence` finding demand completely different responses. Collapsing the two axes into one number destroys the information the user needs to triage.
 
+### Optional: Plain-English Executive Brief (dual-audience output)
+
+The technical report above is the default and is always available — remediation needs it. **In addition**, offer a Plain-English Executive Brief when the user signals a non-technical audience (they ask in plain language, mention "my client," "investors," "is this safe to launch," or explicitly request a non-technical summary). Lead with the brief when that's what they need, but keep the technical report one request away.
+
+The brief is a **translation layer over the same analysis — not a second, softer pass.** The severity rubric, confidence ratings, and evidence standard underneath are unchanged; you are restating the verified findings in plain terms, never re-deciding them. Structure it exactly like this:
+
+```
+## Is this safe to ship?
+- One answer: Yes / Yes, once the "Fix before launch" items are done / No, not yet.
+- One or two plain sentences on why.
+
+## Fix before launch
+- <Plain-language name of the risk.> — a one-line real-world analogy for what could go wrong
+  (e.g. "any customer can open any other customer's invoices by changing a number in the address bar,
+  like a mailbox whose lock opens every box in the row"). No OWASP/CWE IDs, no jargon.
+
+## Worth doing, but not urgent
+- <Same plain-language treatment for the lower-severity items.>
+
+## What we checked and what we didn't
+- Plain-language scope and residual-risk note, so "safe" isn't read as a guarantee about untested areas.
+```
+
+Map severity to the two buckets honestly: Critical/High → "Fix before launch," Medium/Low → "Worth doing, not urgent." Never move a Critical into the second bucket to make the brief more reassuring — the buckets are a rename of the rubric, not an escape from it. Drop all IDs and payloads; keep the real-world analogy concrete and specific to *their* app, not a generic metaphor.
+
 ---
 
 ## Maintaining this skill
 
 Security knowledge ages. Keep the skill useful over time by extending the references rather than rewriting the workflow:
 
-- Add new framework playbooks to `references/stack-playbooks.md` following the existing shape (key, trust model, top traps, test method). The playbooks file is meant to keep growing a stack at a time, as SENTINEL meets projects on stacks it doesn't yet cover.
+- Add new framework playbooks as a new file under `references/stack-playbooks/`, following the existing shape (key, trust model, top traps, test method), and add a row to the index table in `references/stack-playbooks.md`. Add new *artifact-type* playbooks (a platform whose entry points aren't routes) to `references/artifact-playbooks.md`. The playbooks are meant to keep growing a stack or artifact type at a time, as SENTINEL meets targets it doesn't yet cover.
 - When a new vulnerability class or notable CVE pattern appears, add it to `references/vulnerability-catalog.md` with detection guidance and a fix in `references/remediation-patterns.md`. A class is not complete until it exists in both files and is reachable from the Phase 3 scan; the repo's `scripts/check_repo.py` enforces the first two.
 - Add new scanners to `references/tooling.md` with the one thing tool documentation always omits: what the tool systematically *misses*. A tool whose blind spots are undocumented gets trusted past its competence, which is worse than not running it.
-- The framework-mapping tables in the catalog reference the editions current at version 2.1.0; refresh them as OWASP, the API and LLM Top 10s, and the CWE Top 25 publish new editions. Bump the `metadata.version` when you do.
+- The framework-mapping tables in the catalog reference the editions current at version 3.0.0; refresh them as OWASP, the API and LLM Top 10s, and the CWE Top 25 publish new editions. Bump the `metadata.version` when you do.
 - **Known limitation — commit history.** The Phase 4 iterative regression audit is only as sharp as the history available. `references/tooling.md` gives the git archaeology that makes it sharp when history exists; nothing recovers it when history doesn't. Say so in the report rather than implying the phase ran fully.
 - **Deliberate limitation — tools stay advisory.** Static analysis is integrated as *lead generation* only. Having SENTINEL run scanners and transcribe their output into findings would invert the discipline the skill exists to enforce — that a finding requires a traced data flow and a named falsifier. A future version that ingests SARIF should feed the Phase 3 candidate list, never the Phase 5 report.

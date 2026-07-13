@@ -87,19 +87,28 @@ is a missing control behind working code.
 
 ## Phase 0 — Pre-audit inventory
 
-Orientation *before* orientation: a few bullets, never a report section of its own. Phase 0 answers "how
-suspicious should I be?" and hands that calibration to every phase after it.
+Orientation *before* orientation: compact tables, never a report section of its own. Phase 0 answers two
+questions — "what's here?" (mechanical inventory) and "how suspicious should I be?" (AI-authorship
+signal) — and hands both to every phase after it.
 
-1. **Structural map.** Enumerate the modules in scope. A module imported by many consumers has a large
-   blast radius — audit it first. A module importing from many sources may be a God Module doing too many
-   jobs, and is where checks get lost.
-2. **AI-generation markers.** Excessive comments explaining trivial logic, unresolved TODOs, near-duplicate
+1. **Mechanical inventory.** A dependency map (from whichever manifest applies — flag unpinned, abandoned,
+   or hallucinated packages), an entry-point table (every route, handler, server action, webhook, queue
+   consumer, CLI/cron entry, bot command, extension listener, each tagged with its trigger and *declared*
+   auth), a data-flow sketch, and a preliminary trust-boundary list. Plus the structural map: a module
+   imported by many consumers has a large blast radius (audit it first); one importing from many sources
+   may be a God Module where checks get lost.
+2. **Artifact-type classification.** Before assuming "web app with routes," state what the target actually
+   is — web app, backend API, mobile app, browser extension, chat bot, CLI tool, or desktop app — because
+   the entry-point model differs by type, and route the rest of the audit through the matching playbook. A
+   mixed artifact (mobile app + its backend) is audited as both, over a shared trust-boundary map. Note
+   here too whether an LLM/agent integration is present — that switch turns Phase 3 section D on or off.
+3. **AI-generation markers.** Excessive comments explaining trivial logic, unresolved TODOs, near-duplicate
    functions separated by many lines, abrupt style shifts mid-file, monolithic files grown feature by
-   feature. Each is a signal that the code was generated in passes that could not see each other.
-3. **Iteration-depth estimate.** From git: a handful of large AI-assisted commits, or many small
-   human-reviewed ones? High AI-commit density with low human-review density raises the prior on
-   everything downstream — and it is exactly the condition the [Phase 4](#phase-4--iterative-regression-audit)
-   regression audit exists to exploit.
+   feature, and — from git — a handful of large AI-assisted commits versus many small human-reviewed ones.
+   High AI-commit density with low human-review density raises the prior on everything downstream — the
+   condition the [Phase 4](#phase-4--iterative-regression-audit) regression audit exists to exploit. This
+   lens only *raises* scrutiny on flagged sections; it never lowers it, and a hand-written file still gets
+   the full audit.
 
 Phase 0 never blocks the audit. Without repo or git access, say so plainly and proceed with what you have.
 The mechanical commands for this phase are in
@@ -148,13 +157,17 @@ manifestations in
 heart of the scan; it is loaded on demand rather than memorized, so it can be kept current as OWASP, the
 API/LLM Top 10s, and CWE evolve.
 
-The scan runs eight groups, not just the classic vulnerability ones: authorization (A), injection and
+The scan runs nine groups, not just the classic vulnerability ones: authorization (A), injection and
 sinks (B), secrets and configuration (C), LLM and agents (D), architecture and structure (E), async logic
-and state (F), cryptography and randomness (G), and logging and audit trail (H). Groups E and F exist
-because structural and async defects *cause and mask* security bugs — a swallowed error fails open, dead
-code hides a control that protects nothing. Group H exists because the STRIDE **repudiation** leg has
-nowhere else to land: Phase 2 asks "can this action be denied afterward?" and only an audit-trail class
-can answer it.
+and state (F), cryptography and randomness (G), logging and audit trail (H), and platform and artifact
+boundaries (I). Groups E and F exist because structural and async defects *cause and mask* security bugs —
+a swallowed error fails open, dead code hides a control that protects nothing. Group H exists because the
+STRIDE **repudiation** leg has nowhere else to land: Phase 2 asks "can this action be denied afterward?"
+and only an audit-trail class can answer it. Group I exists because a browser extension, a chat bot, or a
+CLI tool has entry points that never appear in a route table — a message listener, a bot command, an
+`--output` flag — and its own permission model to overscope. Group D is **conditional**: it runs only when
+Phase 0 detects an actual LLM or agent integration, and the report says so when it is skipped; a plain
+CRUD app gets every group except that one.
 
 Tools help here, and only here, and only as leads. `semgrep`, `gitleaks`, and the grep pack in
 [`../skill/references/tooling.md`](../skill/references/tooling.md) generate candidates cheaply so the
@@ -222,6 +235,23 @@ both is the honest thing to do:
 
 Collapsing the two would either overstate certainty or understate risk. Keeping them separate lets the
 user act rationally.
+
+### Two audiences over one analysis
+
+The technical report is the default and drives remediation. When the audience is non-technical — a
+founder asking "is this safe to launch," a client, an investor deck — SENTINEL can also produce a
+**Plain-English Executive Brief**: a single yes / yes-once-fixed / no answer, each finding restated with a
+real-world analogy instead of a CWE ID, grouped into "Fix before launch" and "Worth doing, not urgent."
+This is a *translation layer over the same findings*, not a lighter pass — the severity and confidence
+underneath are unchanged, and a Critical never gets softened into the second bucket to make the brief more
+reassuring. The technical report stays one request away.
+
+### Re-auditing after a fix
+
+When fixes have been applied, SENTINEL re-runs the full scan and reports a **delta** over the same template
+— *Resolved / Still open / Newly introduced* — confirming each closed finding by pointing at the control
+that now stops it (a fix that only relocates the vulnerable code is not "resolved"), and scrutinizing the
+patch diffs themselves for bugs the fix introduced. It is the same rigor, presented as a diff.
 
 ## Handling large codebases
 

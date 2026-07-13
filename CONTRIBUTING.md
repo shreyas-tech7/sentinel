@@ -52,9 +52,13 @@ scope can be agreed before you write the full entry.
 
 ## How to add a stack playbook
 
-Follow the shape used in
-[`skill/references/stack-playbooks.md`](skill/references/stack-playbooks.md). Each playbook has four
-parts and nothing more:
+Each stack playbook is its own file under
+[`skill/references/stack-playbooks/`](skill/references/stack-playbooks/); add a new file there and a row
+to the index table in
+[`skill/references/stack-playbooks.md`](skill/references/stack-playbooks.md). For an artifact type whose
+entry points aren't routes (a browser extension, bot, CLI, or desktop app), add to
+[`skill/references/artifact-playbooks.md`](skill/references/artifact-playbooks.md) instead, leading with
+its entry-point map. Each playbook has four parts and nothing more:
 
 - **Key** — the one-sentence mental model for how this stack does authorization and trust.
 - **Trust model** — where the client/server boundary actually sits, and which keys/roles cross it.
