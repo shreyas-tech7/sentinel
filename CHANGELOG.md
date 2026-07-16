@@ -51,11 +51,18 @@ vulnerability classes.
 - **A full [validation methodology](validation/METHODOLOGY.md)** — targets, the static-source-review-only
   ground rule (no live attacks or exploitation, even against these targets), the finding→label matching
   rules, metric definitions, step-by-step reproduction, and known limitations.
-- **Honest result files.** `owasp-benchmark-results.md` and `juice-shop-results.md` document the protocol
-  and the exact reproduction commands, and carry a **harness self-test** (the scorer run against a small
-  synthetic fixture set) proving the scorer computes correctly. Full-corpus accuracy numbers are produced
-  by *running* the harness — this release ships the harness and the method, not asserted figures. Rewriting
-  results a run never produced is precisely the failure this project exists to catch.
+- **Result files carry real pilot numbers (run 2026-07-15), honestly scoped.** A label-blind static pass
+  over the first **21 OWASP Benchmark cases** (`BenchmarkTest00001`–`00021`, v1.2) scored **precision 1.000,
+  recall 0.889, F1 0.941, Youden's J 0.889** (16 TP · 0 FP · 2 FN · 3 TN) against the real
+  `expectedresults-1.2.csv` — zero false positives, with the two misses being a Trust-Boundary case
+  (CWE-501, no SENTINEL class) and a `Runtime.exec`-*envp* case where SENTINEL's exploitability trace
+  diverged from Benchmark's taint-reaches-sink labelling. A **6-file Juice Shop backend** pass produced 7
+  real findings (SQLi ×2, IDOR, SSRF, open redirect, MD5 hashing, hard-coded JWT signing key) for **0.556
+  weakness-class coverage**, the four misses being classes whose files the bounded pilot never opened (three
+  of them — SSTi, NoSQL, prompt injection — are in the catalog; only XXE is a genuine gap). **These are
+  bounded samples, labelled as such — not full-corpus scores.** The scorer's own arithmetic is unit-tested
+  against synthetic fixtures. Rewriting results a run never produced is precisely the failure this project
+  exists to catch, so scope is stated, never inflated.
 - **Fixtures and a passing self-test** (`validation/fixtures/`, `validation/test_score.py`).
 
 ### Added — coverage

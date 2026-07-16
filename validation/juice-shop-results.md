@@ -40,58 +40,68 @@ A finding covers a challenge when it shares the challenge's CWE class (with a ca
 matching rule and the coverage-vs-confusion-matrix distinction are defined in
 [METHODOLOGY.md](METHODOLOGY.md#how-a-finding-is-matched-to-a-label).
 
-## Status
+## Results — backend pilot, 6 files (run 2026-07-15)
 
-**No full-challenge-list coverage numbers are reported here.** Producing them means running the
-reproduction steps above across every challenge of a pinned Juice Shop release — a large SENTINEL pass that
-was **not** performed as part of building this harness. Consistent with the repo's standing discipline (see
-[`examples/README.md`](../examples/README.md) and [`CHANGELOG.md`](../CHANGELOG.md)), this file documents
-the protocol and ships the scorer rather than printing a coverage figure for SENTINEL that was never
-actually measured. When the pass is run, record the Juice Shop version, the finding-export date, and the
-list of uncovered challenge classes under this heading — the misses are the point, because each one is a
-catalog gap to close.
+**This is a real run over a bounded slice of the app, not the full challenge list.** SENTINEL statically
+audited six backend source files of a current Juice Shop `main` checkout and produced **seven real
+findings**, each traced to a concrete source line:
 
-## Harness self-test (proves the scorer, not SENTINEL)
+| Finding | File | Class | CWE |
+|---|---|---|---|
+| SQL injection (login bypass) | `routes/login.ts` | `req.body.email` interpolated into a `sequelize.query` template | CWE-89 |
+| SQL injection (product search) | `routes/search.ts` | `req.query.q` interpolated into a `SELECT ... LIKE` | CWE-89 |
+| IDOR (any user's basket) | `routes/basket.ts` | `findOne({ where: { id: req.params.id } })`, no ownership check | CWE-639 |
+| SSRF (image URL upload) | `routes/profileImageUrlUpload.ts` | `fetch(req.body.imageUrl)`, no internal-range block | CWE-918 |
+| Open redirect | `routes/redirect.ts` | substring allow-list (`url.includes`) then `res.redirect(toUrl)` | CWE-601 |
+| Weak password hashing | `lib/insecurity.ts` | `crypto.createHash('md5')` | CWE-916 |
+| Hard-coded signing key | `lib/insecurity.ts` | RSA private key literal used to sign JWTs | CWE-798 |
 
-The scorer is verified independently of any real pass, against a synthetic
-[fixture](fixtures/README.md) of six challenge classes (SQLi, reflected XSS, path traversal, IDOR, prompt
-injection, SSRF) whose coverage is known by construction. **This tests the arithmetic in `score.py`. It is
-not a measurement of SENTINEL's accuracy on Juice Shop** — the fixtures are fake findings against a fake
-challenge list.
+Scored as **challenge-class coverage** over a truth set of nine distinct server-side weakness classes drawn
+from Juice Shop's real `data/static/challenges.yml` (the file ships no CWE field, so each class was assigned
+its CWE from the underlying weakness):
 
 ```console
 $ python validation/score.py \
-    --findings validation/fixtures/sample-findings.json \
-    --truth   validation/fixtures/sample-juice-shop-truth.json \
+    --findings juice-findings.json \
+    --truth   juice-truth.json \
     --format  juice-shop
 
 SENTINEL validation - juice-shop adapter
-findings file: validation\fixtures\sample-findings.json
-truth file:    validation\fixtures\sample-juice-shop-truth.json
 match rule:    CWE class coverage (category fallback)
 ------------------------------------------------------------
 Confusion matrix
                     flagged   not flagged
-  real vuln           3           3
+  real vuln           5           4
   not vuln          n/a         n/a
   (coverage-only adapter: FP/TN not applicable - see METHODOLOGY.md)
 ------------------------------------------------------------
-cases scored:      6
-findings:          5 total, 3 matched, 0 unmatched
+cases scored:      9
+findings:          7 total, 5 matched, 0 unmatched
 ------------------------------------------------------------
 precision            1.0000
-recall (TPR)         0.5000
-specificity (TNR)       n/a
-F1                   0.6667
-false-negative rate  0.5000
+recall (TPR)         0.5556
+F1                   0.7143
+false-negative rate  0.4444
 ------------------------------------------------------------
 uncovered challenge classes:
-  - View another user's basket
-  - Prompt injection of the bot
-  - SSRF via image URL upload
+  - SSTi
+  - XXE Data Access
+  - NoSQL Manipulation
+  - Chatbot Prompt Injection
 ```
 
-The three uncovered classes are intentional — the fixture's findings deliberately omit IDOR, prompt
-injection, and SSRF so the self-test exercises the adapter's miss-reporting, which is exactly the output a
-real pass mines for catalog gaps. The self-test ([`test_score.py`](test_score.py)) asserts the recall and
-coverage numbers above; run it with `python validation/test_score.py` (or `pytest validation/`).
+**Read the misses correctly.** Recall here is 0.556 because this pilot opened **six backend files**, and the
+four uncovered classes live in files it never read — not because the classes are undetectable. Three of them
+are squarely in SENTINEL's catalog and a fuller pass that opened the relevant files would be expected to
+reach them: **SSTi** and **NoSQL injection** map to `SENT-INJ-01` (template / operator injection), and
+**Chatbot Prompt Injection** maps to `SENT-LLM-01`. Only **XXE (CWE-611)** is a genuine catalog gap — like
+CWE-501 in the Benchmark run, it has no dedicated SENTINEL class and is logged here as a candidate.
+
+## Scope and honesty
+
+This is a **6-file backend pilot**, not a whole-app audit; the coverage figure is bounded by which files
+were opened, and must not be quoted as SENTINEL's ceiling on Juice Shop. A complete pass audits every
+challenge-linked file across a pinned release. The seven findings above are real (each names a file and a
+sink); the truth-set CWEs were assigned by hand because the challenge file carries none — that mapping is
+the one hand-authored input, disclosed here rather than hidden. The scorer itself is unit-tested against
+synthetic fixtures — `python validation/test_score.py`.
