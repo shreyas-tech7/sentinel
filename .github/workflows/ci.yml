@@ -25,10 +25,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Dead links, dead anchors, catalog <-> remediation class parity, and
-      # credential-shaped strings. Standard library only; no install step.
+      # Dead links, dead anchors, catalog <-> remediation class parity, OWASP 2025 /
+      # CWE Top-25 edition sanity, and credential-shaped strings. Stdlib only; no install.
       - name: Check repository invariants
         run: python scripts/check_repo.py
+
+      # The checker and the matrix generator have their own unit tests.
+      - name: Test the checker
+        run: python scripts/test_check_repo.py
+
+      # The class->standards coverage matrix is generated from the catalog; fail if stale.
+      - name: Coverage matrix is up to date
+        run: python scripts/gen_coverage_matrix.py --check
+
+      # The validation scorer's self-test (proves the scorer arithmetic, stdlib only).
+      - name: Test the validation scorer
+        run: python validation/test_score.py
 
   secret-scan:
     name: Secret scan (full history)

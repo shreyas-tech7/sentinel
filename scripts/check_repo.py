@@ -199,6 +199,113 @@ def check_secrets(root: Path, files: list[Path], errors: list[str]) -> None:
                     errors.append(f"{rel}:{i}: possible committed secret ({label})")
 
 
+# ── Standards-edition sanity (guards the OWASP 2021→2025 migration) ──────────────
+# The catalog classifies every class against a fixed set of standard editions. A
+# half-finished edition migration (a stale 2021 code, a mis-paired 2025 name, a
+# wrong CWE-Top-25 rank) is a factual error in a security tool — exactly the kind
+# of thing the tool tells its users to catch. These checks make it CI-visible.
+# The reference data is the OWASP Top 10:2025 and the 2025 CWE Top 25.
+
+OWASP_2025_NAMES = {
+    "A01": "Broken Access Control",
+    "A02": "Security Misconfiguration",
+    "A03": "Software Supply Chain Failures",
+    "A04": "Cryptographic Failures",
+    "A05": "Injection",
+    "A06": "Insecure Design",
+    "A07": "Authentication Failures",
+    "A08": "Software or Data Integrity Failures",
+    "A09": "Security Logging and Alerting Failures",
+    "A10": "Mishandling of Exceptional Conditions",
+}
+
+# rank -> CWE, from https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html
+CWE_TOP25_2025 = {
+    79: 1, 89: 2, 352: 3, 862: 4, 787: 5, 22: 6, 416: 7, 125: 8, 78: 9, 94: 10,
+    120: 11, 434: 12, 476: 13, 121: 14, 502: 15, 122: 16, 863: 17, 20: 18,
+    284: 19, 200: 20, 306: 21, 918: 22, 77: 23, 639: 24, 770: 25,
+}
+
+_CLASS_MARKER = re.compile(r"-\s+\*\*Classification:\*\*")
+_OWASP_2021 = re.compile(r"\bA\d{2}:2021\b")
+_OWASP_NAMED = re.compile(r"\bA(\d{2}):2025\s*\(([^)]+)\)")
+_CWE_RANK = re.compile(r"\bCWE-(\d+)\b[^)]*?#(\d+)\s+on the 2025 CWE Top 25")
+
+
+def _norm(s: str) -> str:
+    return re.sub(r"\s+", " ", s.replace("&", "and")).strip().lower()
+
+
+def classification_blocks(path: Path):
+    """Yield (lineno, joined_text) for each Classification field, joined across wraps."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    i, n = 0, len(lines)
+    while i < n:
+        if _CLASS_MARKER.search(lines[i]):
+            buf = [lines[i].strip()]
+            j = i + 1
+            while (
+                j < n
+                and lines[j].strip()
+                and not lines[j].lstrip().startswith("- **")
+                and not lines[j].startswith("#")
+            ):
+                buf.append(lines[j].strip())
+                j += 1
+            yield i + 1, " ".join(buf)
+            i = j
+        else:
+            i += 1
+
+
+def check_catalog_editions(root: Path, errors: list[str]) -> None:
+    catalog = root / "skill" / "references" / "vulnerability-catalog.md"
+    if not catalog.exists():
+        return
+    rel = catalog.relative_to(root).as_posix()
+    for lineno, text in classification_blocks(catalog):
+        for m in _OWASP_2021.finditer(text):
+            errors.append(
+                f"{rel}:{lineno}: stale OWASP 2021 code '{m.group(0)}' on a "
+                "Classification line — the catalog is on the 2025 editions."
+            )
+        for m in _OWASP_NAMED.finditer(text):
+            code, name = "A" + m.group(1), m.group(2).strip()
+            # A parenthetical that opens lowercase is a qualifier ("per the control"),
+            # not a category name — OWASP category names are Title Case. Skip it.
+            if not name[:1].isupper():
+                continue
+            official = OWASP_2025_NAMES.get(code)
+            if official and not _norm(name).startswith(_norm(official)):
+                errors.append(
+                    f"{rel}:{lineno}: OWASP {code}:2025 is '{official}', "
+                    f"but the catalog names it '({name})'."
+                )
+        for m in _CWE_RANK.finditer(text):
+            cwe, rank = int(m.group(1)), int(m.group(2))
+            actual = CWE_TOP25_2025.get(cwe)
+            if actual is None:
+                errors.append(
+                    f"{rel}:{lineno}: CWE-{cwe} is annotated '#{rank} on the 2025 "
+                    "CWE Top 25' but is not in the 2025 Top 25."
+                )
+            elif actual != rank:
+                errors.append(
+                    f"{rel}:{lineno}: CWE-{cwe} is #{actual} on the 2025 CWE Top 25, "
+                    f"catalog says #{rank}."
+                )
+
+
+def check_validation_not_stub(root: Path, errors: list[str]) -> None:
+    """The validation files must not ship as stubs once v4.0 claims them complete."""
+    for name in ("METHODOLOGY.md", "owasp-benchmark-results.md", "juice-shop-results.md"):
+        p = root / "validation" / name
+        if p.exists() and "Stub —" in p.read_text(encoding="utf-8"):
+            errors.append(
+                f"validation/{name}: still a stub — the validation pass must fill it in."
+            )
+
+
 # ── Entry point ─────────────────────────────────────────────────────────────────
 
 IGNORE_DIRS = {".git", "node_modules", ".next", "dist", "build", "__pycache__"}
@@ -232,6 +339,8 @@ def main() -> int:
     errors: list[str] = []
     check_links(root, md_files, errors)
     check_class_parity(root, errors)
+    check_catalog_editions(root, errors)
+    check_validation_not_stub(root, errors)
     check_secrets(root, text_files, errors)
 
     if errors:
@@ -245,8 +354,8 @@ def main() -> int:
     n_links = sum(1 for md in md_files for _ in links(md))
     print(
         f"OK — {len(md_files)} markdown files, {n_links} links resolved, "
-        f"{n_classes} classes with matching remediations, "
-        f"{len(text_files)} files scanned for secrets."
+        f"{n_classes} classes with matching remediations, OWASP 2025 / CWE Top-25 "
+        f"editions consistent, {len(text_files)} files scanned for secrets."
     )
     return 0
 

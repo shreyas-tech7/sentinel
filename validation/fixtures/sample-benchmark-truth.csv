@@ -1,0 +1,9 @@
+# test name, category, real vulnerability, cwe, Benchmark version: synthetic-fixture, 2026-07-14
+BenchmarkTest00001,sqli,true,89
+BenchmarkTest00002,xss,true,79
+BenchmarkTest00003,pathtraver,true,22
+BenchmarkTest00004,cmdi,true,78
+BenchmarkTest00005,ldapi,true,90
+BenchmarkTest00006,sqli,false,89
+BenchmarkTest00007,xss,false,79
+BenchmarkTest00008,trustbound,false,501

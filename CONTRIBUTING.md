@@ -23,6 +23,10 @@ Please read the [Code of Conduct](CODE_OF_CONDUCT.md) and the defensive-use term
   [`examples/README.md`](examples/README.md).
 - **Voice:** understated, precise, senior-engineer. No hype, no emoji spam. Let the substance
   carry it.
+- **Accuracy claims are measured, not asserted.** SENTINEL's detection accuracy is checked against
+  public ground truth in [`validation/`](validation/) (OWASP Benchmark, OWASP Juice Shop) — never against
+  the maintainer's own audits. If a change claims to catch more, extend the validation set so the gain is
+  reproducible. Never hand-write validation *results*; they come from running the harness.
 
 ## How to add a vulnerability class
 
@@ -96,9 +100,13 @@ The project version is the skill's `metadata.version` in `skill/SKILL.md`, follo
 
 - **PATCH** (`1.0.x`) — wording fixes, new remediation languages, clarifications that change no
   classification.
-- **MINOR** (`1.x.0`) — new vulnerability classes or playbooks; **any change to the OWASP / API /
-  LLM / CWE mapping tables** (including refreshing to a new edition).
-- **MAJOR** (`x.0.0`) — a change to the six-phase workflow or the report output format.
+- **MINOR** (`1.x.0`) — new vulnerability classes or playbooks; **additive changes to the OWASP / API /
+  LLM / CWE / ASVS mapping tables** that leave existing classifications' IDs intact.
+- **MAJOR** (`x.0.0`) — a change to the six-phase workflow or the report output format, **or a standards
+  edition migration that re-numbers classifications that already shipped.** A downstream consumer keys off
+  the Classification IDs SENTINEL emits, so changing (e.g.) every `A03:2021` to `A05:2025` breaks that
+  contract exactly as a report-format change would — it is MAJOR, not a mapping-table refresh. This is why
+  v4.0.0 (the 2021→2025 migration) is a major bump even though the workflow is untouched.
 
 Every version bump gets a [CHANGELOG.md](CHANGELOG.md) entry under a new heading.
 
@@ -108,11 +116,15 @@ Every version bump gets a [CHANGELOG.md](CHANGELOG.md) entry under a new heading
 2. Keep the change focused — one class, one playbook, or one doc per pull request.
 3. Run the repo's own checks before pushing:
    ```bash
-   python scripts/check_repo.py   # links, anchors, class parity, secret shapes
+   python scripts/check_repo.py        # links, anchors, class parity, OWASP/CWE edition sanity, secret shapes
+   python scripts/test_check_repo.py   # unit tests for the checker itself
+   python scripts/gen_coverage_matrix.py   # regenerate the class→standards matrix if you touched classifications
+   python validation/test_score.py     # self-test for the validation scorer
    ```
-   This is the same script CI runs ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). It will
-   fail if you add a catalog class without a remediation, or vice versa — that invariant is enforced,
-   not merely requested. Also confirm no `.env*` is staged.
+   These are the same checks CI runs ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). `check_repo.py`
+   will fail if you add a catalog class without a remediation or vice versa, if a classification cites an
+   OWASP 2025 code whose name doesn't match, or if a CWE Top-25 rank annotation is wrong — those invariants
+   are enforced, not merely requested. Also confirm no `.env*` is staged.
 4. Reference the issue you opened, and describe how you verified any code you added actually blocks
    the attack it claims to.
 

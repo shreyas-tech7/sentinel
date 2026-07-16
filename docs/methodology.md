@@ -155,7 +155,9 @@ exhaustive checklist with detection guidance and classification for each — and
 manifestations in
 [`../skill/references/stack-playbooks.md`](../skill/references/stack-playbooks.md). The catalog is the
 heart of the scan; it is loaded on demand rather than memorized, so it can be kept current as OWASP, the
-API/LLM Top 10s, and CWE evolve.
+API/LLM Top 10s, and CWE evolve. How each class maps to the current editions — OWASP Top 10:2025, the
+API/LLM Top 10s, the 2025 CWE Top 25, and ASVS 5.0.0 — is detailed in
+[standards-mapping.md](standards-mapping.md).
 
 The scan runs nine groups, not just the classic vulnerability ones: authorization (A), injection and
 sinks (B), secrets and configuration (C), LLM and agents (D), architecture and structure (E), async logic

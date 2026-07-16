@@ -1,0 +1,99 @@
+{
+  "findings": [
+    {
+      "id": "SENT-INJ-01",
+      "title": "SQL injection in BenchmarkTest00001 order lookup",
+      "severity": "high",
+      "confidence": "high",
+      "classification": { "owasp": ["A03:2025"], "api": ["API8:2023"], "cwe": ["CWE-89"] },
+      "location": {
+        "file": "src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00001.java",
+        "line": 48,
+        "symbol": "doPost"
+      },
+      "evidence": {
+        "source": "request.getParameter(\"foo\") (attacker-controlled)",
+        "sink": "statement.executeQuery(\"... '\" + param + \"' ...\")",
+        "missing_control": "no parameterized query; string-concatenated SQL"
+      },
+      "falsifiable_by": "a PreparedStatement with a bound parameter for this query",
+      "remediation_ref": "remediation-patterns.md#sent-inj-01--parameterize-every-query"
+    },
+    {
+      "id": "SENT-INJ-02",
+      "title": "Reflected XSS in BenchmarkTest00002 response writer",
+      "severity": "medium",
+      "confidence": "high",
+      "classification": { "owasp": ["A03:2025"], "api": [], "cwe": ["CWE-79"] },
+      "location": {
+        "file": "src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00002.java",
+        "line": 61,
+        "symbol": "doGet"
+      },
+      "evidence": {
+        "source": "request.getParameter(\"name\") (attacker-controlled)",
+        "sink": "response.getWriter().write(name)",
+        "missing_control": "no output encoding on the reflected value"
+      },
+      "falsifiable_by": "contextual output encoding (e.g. OWASP Java Encoder) on the sink",
+      "remediation_ref": "remediation-patterns.md#sent-inj-02--encode-on-output-not-on-input"
+    },
+    {
+      "id": "SENT-INJ-10",
+      "title": "Path traversal in BenchmarkTest00003 file read",
+      "severity": "high",
+      "confidence": "medium",
+      "classification": { "owasp": ["A01:2025"], "api": [], "cwe": ["CWE-22"] },
+      "location": {
+        "file": "src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00003.java",
+        "line": 55,
+        "symbol": "doPost"
+      },
+      "evidence": {
+        "source": "request.getParameter(\"path\") (attacker-controlled)",
+        "sink": "new FileInputStream(new File(base, path))",
+        "missing_control": "no canonicalization / base-dir containment check"
+      },
+      "falsifiable_by": "a canonical-path check asserting the resolved file stays under base",
+      "remediation_ref": "remediation-patterns.md#sent-inj-10--contain-file-paths-to-a-safe-base"
+    },
+    {
+      "id": "SENT-INJ-01",
+      "title": "SQL injection flagged in BenchmarkTest00006 (safe case — false positive)",
+      "severity": "high",
+      "confidence": "low",
+      "classification": { "owasp": ["A03:2025"], "api": [], "cwe": ["CWE-89"] },
+      "location": {
+        "file": "src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00006.java",
+        "line": 50,
+        "symbol": "doPost"
+      },
+      "evidence": {
+        "source": "request.getParameter(\"foo\") (attacker-controlled)",
+        "sink": "statement.executeQuery(constantQuery)",
+        "missing_control": "APPEARS concatenated but the value is discarded before the query"
+      },
+      "falsifiable_by": "the tainted value never reaches the query string on this path",
+      "remediation_ref": "remediation-patterns.md#sent-inj-01--parameterize-every-query"
+    },
+    {
+      "id": "SENT-CRYPTO-01",
+      "title": "Finding on a case absent from the truth file (BenchmarkTest09999)",
+      "severity": "low",
+      "confidence": "low",
+      "classification": { "owasp": ["A02:2025"], "api": [], "cwe": ["CWE-327"] },
+      "location": {
+        "file": "src/main/java/org/owasp/benchmark/testcode/BenchmarkTest09999.java",
+        "line": 33,
+        "symbol": "doGet"
+      },
+      "evidence": {
+        "source": "static seed material",
+        "sink": "Cipher.getInstance(\"DES\")",
+        "missing_control": "deprecated cipher; exercises the scorer's unmatched-finding path"
+      },
+      "falsifiable_by": "this test id is not present in the sample truth CSV",
+      "remediation_ref": "remediation-patterns.md#sent-crypto-01--hash-credentials-with-a-slow-salted-kdf"
+    }
+  ]
+}

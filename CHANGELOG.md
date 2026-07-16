@@ -8,6 +8,89 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] — 2026-07-14
+
+Re-grounds SENTINEL's taxonomy in the **current (2025) editions of the public standards** and stands up
+**external accuracy validation against public ground truth**. The six-phase workflow, the STRIDE core, the
+severity/confidence rubrics, the evidence standard, and the report template are all unchanged. This is a
+MAJOR bump for one reason: the edition migration **re-numbers every classification ID that already
+shipped** (`A03:2021` Injection → `A05:2025`, `A05:2021` Misconfiguration → `A02:2025`, and so on). Because
+a downstream consumer keys off the Classification IDs SENTINEL emits, changing them all breaks that output
+contract exactly as a report-format change would — so [CONTRIBUTING.md](CONTRIBUTING.md)'s versioning rule
+now states that a re-numbering edition migration is MAJOR, while an additive mapping change stays MINOR.
+The class count is unchanged at **45** — v4.0 sharpens classification and proves accuracy; it does not add
+vulnerability classes.
+
+### Changed — standards migration (OWASP 2021 → 2025, CWE Top 25 2025, ASVS 5.0)
+- **Every classification in the catalog now cites the 2025 editions**, verified against the primary
+  sources: OWASP Top 10:2025 (<https://owasp.org/Top10/2025/>), the 2025 CWE Top 25
+  (<https://cwe.mitre.org/top25/>), and OWASP ASVS 5.0.0 (May 2025). The API Security Top 10:2023 and
+  LLM Top 10:2025 were already current and are unchanged.
+- **The 2021→2025 crosswalk is documented** at the top of `vulnerability-catalog.md` and, in full, in the
+  new [`docs/standards-mapping.md`](docs/standards-mapping.md): Broken Access Control stays A01 and now
+  **absorbs SSRF** (was A10:2021); Security Misconfiguration rises to A02; **Software Supply Chain Failures
+  (A03) is new** and expands 2021's Vulnerable & Outdated Components; Cryptographic Failures → A04;
+  Injection → A05; Insecure Design → A06; Authentication Failures → A07; and **Mishandling of Exceptional
+  Conditions (A10) is new.**
+- **The new A10:2025 category validates SENTINEL's category F.** OWASP's 2025 edition gives swallowed
+  exceptions and fail-open error handling their own top-ten slot; `SENT-ASYNC-01` (swallowed async errors /
+  silent fallback returns) now maps to **A10:2025** as its archetype — a class SENTINEL flagged before the
+  standard formally recognized it.
+- **CWE annotations now carry the 2025 Top-25 rank** where a class maps to one (XSS #1, SQLi #2, CSRF #3,
+  Missing Authorization #4, Path Traversal #6, …), so severity conversations can point at prevalence data.
+- **ASVS 5.0 chapter citations** were added to the classes that map cleanly (e.g. Authorization → ch. 8,
+  Authentication → ch. 6, File Handling → ch. 5, Security Logging and Error Handling → ch. 16), giving each
+  finding a verification requirement to check against, not just a category label.
+
+### Added — external validation (`validation/`)
+- **A runnable, standard-library scoring harness** (`validation/score.py`) that ingests SENTINEL's
+  static-review findings (the JSON schema from `tooling.md`) plus a ground-truth labels file and computes a
+  confusion matrix with precision, recall, F1, and Youden's J — against **OWASP Benchmark** (per-test-case
+  labels) and **OWASP Juice Shop** (app-shaped challenge coverage, including its LLM/prompt-injection
+  challenges).
+- **A full [validation methodology](validation/METHODOLOGY.md)** — targets, the static-source-review-only
+  ground rule (no live attacks or exploitation, even against these targets), the finding→label matching
+  rules, metric definitions, step-by-step reproduction, and known limitations.
+- **Honest result files.** `owasp-benchmark-results.md` and `juice-shop-results.md` document the protocol
+  and the exact reproduction commands, and carry a **harness self-test** (the scorer run against a small
+  synthetic fixture set) proving the scorer computes correctly. Full-corpus accuracy numbers are produced
+  by *running* the harness — this release ships the harness and the method, not asserted figures. Rewriting
+  results a run never produced is precisely the failure this project exists to catch.
+- **Fixtures and a passing self-test** (`validation/fixtures/`, `validation/test_score.py`).
+
+### Added — coverage
+- **Three new stack playbooks** — [Java / Spring](skill/references/stack-playbooks/java-spring.md),
+  [.NET / ASP.NET Core](skill/references/stack-playbooks/dotnet.md), and
+  [Rust](skill/references/stack-playbooks/rust.md) — each in the standard four-part shape (key, trust model,
+  top traps cross-linked to catalog IDs, how to test), and indexed in `stack-playbooks.md`. The Rust
+  playbook is explicit that memory safety removes a bug class, so its traps are logic and configuration, not
+  memory.
+- **A generated coverage matrix** (`skill/references/coverage-matrix.md`) — one table mapping all 45 classes
+  to their OWASP 2025 / CWE / ASVS classification, emitted from the catalog by
+  `scripts/gen_coverage_matrix.py` so it can never drift from the source of truth.
+- **[`docs/standards-mapping.md`](docs/standards-mapping.md)** — the reference for which editions SENTINEL
+  cites, the full 2021→2025 crosswalk, and how to read a Classification line field by field.
+
+### Added — enforcement
+- **`scripts/check_repo.py` gained four invariants:** no stale `A0N:2021` code on a Classification line
+  (guards against a half-finished edition migration), OWASP 2025 codes must pair with their correct
+  official names (catches the A06/A07 "Insecure Design vs Authentication Failures" swap class of error),
+  CWE Top-25 rank annotations must match the real 2025 ranking, and the `validation/` result files must not
+  ship as stubs.
+- **`scripts/test_check_repo.py`** — a unit-test suite for the checker and the matrix generator, runnable
+  with or without pytest.
+- **CI** now runs the checker's own tests, the validation self-test, and a coverage-matrix drift check
+  alongside the existing structural and secret scans.
+
+### Unchanged (deliberately)
+- The six-phase workflow, the STRIDE step, the report output template, the Critical/High/Medium/Low
+  severity rubric, the separate confidence rubric, the evidence standard (source · sink · missing control ·
+  falsifier), and the read-only / report-only default. The 45 vulnerability classes and their SENT-IDs are
+  the same; only their standards *labels* moved to the 2025 editions.
+- The three `examples/` reports keep their v1.0.0 format **and their OWASP 2021 classification IDs** — they
+  are preserved as written, not retrofitted, and are labeled as applied examples rather than the source of
+  the methodology.
+
 ## [3.0.0] — 2026-07-13
 
 Broadens SENTINEL from a Next.js/Supabase-plus-LLM tool into a framework for **any language, framework,
@@ -169,6 +252,7 @@ around it.
 - **Governance** — MIT license, security policy, contribution guide, code of conduct, issue
   templates, and CI notes.
 
+[4.0.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v4.0.0
 [3.0.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v3.0.0
 [2.1.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v2.1.0
 [2.0.0]: https://github.com/shreyas-tech7/sentinel/releases/tag/v2.0.0

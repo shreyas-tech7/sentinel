@@ -232,7 +232,7 @@ alongside the Markdown report. Keep the same fields as the
   "title": "Invoice route returns any invoice by id",
   "severity": "critical",
   "confidence": "high",
-  "classification": { "owasp": ["A01:2021"], "api": ["API1:2023"], "cwe": ["CWE-639", "CWE-284"] },
+  "classification": { "owasp": ["A01:2025"], "api": ["API1:2023"], "cwe": ["CWE-639", "CWE-284"] },
   "location": { "file": "app/api/invoices/[id]/route.ts", "line": 12, "symbol": "GET" },
   "evidence": {
     "source": "params.id (attacker-controlled)",

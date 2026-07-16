@@ -4,7 +4,7 @@
 software — any language, any framework, any artifact type.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-4.0.0-informational.svg)](CHANGELOG.md)
 [![Use: defensive only](https://img.shields.io/badge/use-defensive%20only-important.svg)](SECURITY.md)
 
 SENTINEL is a persona and a fixed six-phase workflow that audits source code the way a careful staff
@@ -25,7 +25,8 @@ It runs as a [Claude Code / Cursor skill](docs/how-to-use.md), or as a
 [standalone prompt](prompts/sentinel-master-prompt.md) you paste into any chat model. The methodology is
 framework-agnostic; the [playbooks](skill/references/stack-playbooks.md) open with a generic checklist
 for any stack, then go sharp on Supabase, Next.js, serverless/edge, LLM/RAG, Python (Django/Flask/
-FastAPI), Firebase, Rails, PHP (Laravel/WordPress), Node+Mongo, Go, and mobile — with separate
+FastAPI), Firebase, Rails, PHP (Laravel/WordPress), Node+Mongo, Go, Java/Spring, .NET/ASP.NET Core, Rust,
+and mobile — with separate
 [artifact playbooks](skill/references/artifact-playbooks.md) for extensions, bots, CLIs, and desktop apps.
 
 ---
@@ -144,10 +145,28 @@ This is also why static analysis stays advisory here. SENTINEL uses scanners, gr
 match has no falsifier attached, and a clean scan is not evidence of safety; it is evidence that the
 scanner's rules did not match.
 
+### Grounded in the 2025 standards, and validated against public ground truth
+
+As of v4.0, every class is classified against the **current editions** — OWASP Top 10:2025, OWASP API
+Security Top 10:2023, OWASP Top 10 for LLM Applications:2025, the 2025 CWE Top 25, and OWASP ASVS 5.0.0 —
+so a finding's severity conversation can point at a citable standard and a prevalence rank, not a hunch.
+The full 2021→2025 crosswalk (Broken Access Control absorbs SSRF; Software Supply Chain Failures and
+Mishandling of Exceptional Conditions are new) is in [docs/standards-mapping.md](docs/standards-mapping.md),
+and a generated [coverage matrix](skill/references/coverage-matrix.md) maps all 45 classes to their
+classification on one page.
+
+And because a security tool that only *claims* accuracy is asking for the same trust it tells you to
+withhold from a clean scanner run, SENTINEL's detection accuracy is checked against **public, purpose-built
+ground truth** anyone can re-score — [OWASP Benchmark](https://owasp.org/www-project-benchmark/) and
+[OWASP Juice Shop](https://owasp.org/www-project-juice-shop/) — with a runnable scoring harness and a
+documented, reproducible protocol in [`validation/`](validation/). Static source review only; misses are
+reported as misses and fed back into the catalog.
+
 ## Coverage — what it looks for
 
-Grouped below; the [catalog](skill/references/vulnerability-catalog.md) has detection guidance, OWASP/CWE
-classification, and a cross-linked fix for each.
+Grouped below; the [catalog](skill/references/vulnerability-catalog.md) has detection guidance, OWASP 2025 /
+CWE (with 2025 Top-25 rank) / ASVS 5.0 classification, and a cross-linked fix for each — summarized in the
+[coverage matrix](skill/references/coverage-matrix.md).
 
 Forty-five classes across nine groups:
 
@@ -230,12 +249,13 @@ welcome — the bar is that every addition be defensible and defensive. See
 sentinel/
 ├── skill/                 # the drop-in Claude/Cursor skill (methodology + references)
 │   ├── SKILL.md
-│   └── references/        # vulnerability catalog · remediation patterns · tooling · artifact playbooks
-│       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, firebase, …)
+│   └── references/        # vulnerability catalog · remediation patterns · tooling · artifact playbooks · coverage matrix
+│       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, java-spring, dotnet, rust, …)
 ├── prompts/               # standalone master prompt + quick single-file variant
-├── docs/                  # methodology · threat modeling · Supabase RLS guide · how-to-use
+├── docs/                  # methodology · threat modeling · standards mapping · Supabase RLS guide · how-to-use
 ├── examples/              # three redacted example audits
-├── scripts/               # check_repo.py — link, anchor, class-parity, and secret checks
+├── validation/            # external accuracy harness — scorer + methodology vs OWASP Benchmark / Juice Shop
+├── scripts/               # check_repo.py (invariants) · gen_coverage_matrix.py · test suites
 └── .github/               # issue templates + CI workflow and notes
 ```
 

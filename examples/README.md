@@ -13,14 +13,22 @@ attack surfaces:
 
 Real audits of the author's own deployed projects, rewritten for publication. They exist to demonstrate
 how the workflow reads on a real system — the orientation, the threat model, the findings ordered by
-severity, and the fixes — not to catalog live weaknesses. A good report is not a wall of Criticals; it's
+severity, and the fixes — not to catalog live weaknesses.
+
+**These are applied examples only — they are not the source of the methodology.** As of v4.0, the
+[vulnerability catalog](../skill/references/vulnerability-catalog.md) and severity rubric are derived
+from public, citable standards (OWASP Top 10:2025, OWASP API Security Top 10:2023, OWASP Top 10 for
+LLM Applications:2025, the 2025 CWE Top 25, and ASVS 5.0), and the tool's accuracy is checked against
+public ground truth in [`validation/`](../validation/) rather than against these three audits. A good report is not a wall of Criticals; it's
 a proportionate picture of a system's risk, and these reflect that.
 
 > **These three reports were produced under the v1.0.0 report format**, before v2.0.0 added the Phase 0
 > inventory, the Phase 4 regression audit, and the *Code Health Notes* section. They are preserved as
 > written rather than retrofitted, because rewriting a real audit after the fact to demonstrate a feature
 > it never ran would be exactly the kind of thing this project exists to catch. A current audit produces
-> the six sections listed below; these show five. See [CHANGELOG.md](../CHANGELOG.md).
+> the six sections listed below; these show five. Their OWASP/CWE classification IDs likewise reflect the
+> **2021 editions** current when the audits ran — the catalog itself moved to the 2025 editions in v4.0,
+> but these preserved reports are not rewritten to match. See [CHANGELOG.md](../CHANGELOG.md).
 
 ## Redaction policy (applied to every report without exception)
 

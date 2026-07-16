@@ -4,7 +4,7 @@ Part of the [SENTINEL stack playbooks](../stack-playbooks.md).
 
 ## Key
 Firebase is Supabase's sibling failure: the client SDK talks to the database directly with a config
-that ships to the browser, so **security rules are the authorization layer** — not your app code. The
+that ships to the browser, so **security rules are the authorization layer** — not the application code. The
 rules file is the whole boundary, and the default a vibe-coded project reaches for opens it entirely.
 
 ## Trust model

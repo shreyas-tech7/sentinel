@@ -1,0 +1,10 @@
+{
+  "challenges": [
+    { "id": "loginSql",        "name": "SQL Injection (login bypass)", "category": "Injection",              "cwe": 89 },
+    { "id": "reflectedXss",    "name": "Reflected XSS",                "category": "Cross Site Scripting",    "cwe": 79 },
+    { "id": "directoryListing","name": "Access confidential file",     "category": "Broken Access Control",   "cwe": 22 },
+    { "id": "idorBasket",      "name": "View another user's basket",   "category": "Broken Access Control",   "cwe": 639 },
+    { "id": "promptInjection", "name": "Prompt injection of the bot",  "category": "LLM / Prompt Injection",  "cwe": 1427 },
+    { "id": "ssrfImageUpload", "name": "SSRF via image URL upload",    "category": "Server Side Request Forgery", "cwe": 918 }
+  ]
+}

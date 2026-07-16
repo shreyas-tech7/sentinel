@@ -30,6 +30,9 @@ here; a mobile app *plus* its backend is audited as both, sharing one trust-boun
 | PHP | [`stack-playbooks/php.md`](stack-playbooks/php.md) | Laravel, WordPress. |
 | Node + Mongo | [`stack-playbooks/node-mongo.md`](stack-playbooks/node-mongo.md) | Express + MongoDB / Mongoose; NoSQL operator injection. |
 | Go | [`stack-playbooks/go.md`](stack-playbooks/go.md) | `net/http` and common frameworks; races, ignored errors. |
+| Java / Spring | [`stack-playbooks/java-spring.md`](stack-playbooks/java-spring.md) | Spring Boot, Spring Security, Spring MVC, Spring Data JPA. |
+| .NET | [`stack-playbooks/dotnet.md`](stack-playbooks/dotnet.md) | ASP.NET Core MVC / Web API / Minimal APIs + EF Core. |
+| Rust | [`stack-playbooks/rust.md`](stack-playbooks/rust.md) | Actix-web / Axum / Rocket + SQLx / Diesel; logic/config, not memory. |
 | Mobile | [`stack-playbooks/mobile.md`](stack-playbooks/mobile.md) | React Native, Flutter, native iOS/Android. |
 
 Each trap cross-links to its catalog entry in [`vulnerability-catalog.md`](vulnerability-catalog.md)
