@@ -1,0 +1,398 @@
+[
+  {
+    "test_name": "BenchmarkTest00090",
+    "category": "cmdi",
+    "vulnerable": false,
+    "note": "if((7*42)-86>200) is 208>200 TRUE -> bar=constant; tainted cookie param unused at exec sink"
+  },
+  {
+    "test_name": "BenchmarkTest00308",
+    "category": "cmdi",
+    "vulnerable": false,
+    "note": "same always-true guard -> bar=constant; tainted header unused"
+  },
+  {
+    "test_name": "BenchmarkTest00658",
+    "category": "cmdi",
+    "vulnerable": false,
+    "note": "(7*18)+106=232>200 TRUE -> bar=constant; tainted param unused"
+  },
+  {
+    "test_name": "BenchmarkTest00742",
+    "category": "cmdi",
+    "vulnerable": false,
+    "note": "bar reassigned from map keyA=a_Value (safe) overwriting tainted keyB"
+  },
+  {
+    "test_name": "BenchmarkTest01779",
+    "category": "cmdi",
+    "vulnerable": false,
+    "note": "source scr.getTheValue returns constant bar; safe source"
+  },
+  {
+    "test_name": "BenchmarkTest02067",
+    "category": "cmdi",
+    "vulnerable": false,
+    "note": "switch on guess.charAt(1)='B' -> bar=bob; tainted param unreached"
+  },
+  {
+    "test_name": "BenchmarkTest00210",
+    "category": "crypto",
+    "vulnerable": true,
+    "note": "Cipher.getInstance(DES/CBC/PKCS5Padding) weak cipher DES"
+  },
+  {
+    "test_name": "BenchmarkTest00258",
+    "category": "crypto",
+    "vulnerable": true,
+    "note": "Cipher.getInstance(DES/CBC/PKCS5Padding,SunJCE) weak cipher DES"
+  },
+  {
+    "test_name": "BenchmarkTest00521",
+    "category": "crypto",
+    "vulnerable": true,
+    "note": "Cipher.getInstance(DES/CBC/PKCS5PADDING) weak DES"
+  },
+  {
+    "test_name": "BenchmarkTest01742",
+    "category": "crypto",
+    "vulnerable": true,
+    "note": "cryptoAlg1 resolves to DES/ECB/PKCS5Padding in benchmark.properties -> weak DES"
+  },
+  {
+    "test_name": "BenchmarkTest01900",
+    "category": "crypto",
+    "vulnerable": true,
+    "note": "cryptoAlg1=DES/ECB/PKCS5Padding -> weak DES"
+  },
+  {
+    "test_name": "BenchmarkTest01901",
+    "category": "crypto",
+    "vulnerable": false,
+    "note": "cryptoAlg2=AES/CCM/NoPadding -> strong authenticated cipher, not a weak-crypto finding"
+  },
+  {
+    "test_name": "BenchmarkTest00072",
+    "category": "hash",
+    "vulnerable": false,
+    "note": "MessageDigest SHA-512 strong hash"
+  },
+  {
+    "test_name": "BenchmarkTest00229",
+    "category": "hash",
+    "vulnerable": false,
+    "note": "hashAlg2=SHA-256 strong hash"
+  },
+  {
+    "test_name": "BenchmarkTest01045",
+    "category": "hash",
+    "vulnerable": false,
+    "note": "hashAlg2=SHA-256 strong hash"
+  },
+  {
+    "test_name": "BenchmarkTest01416",
+    "category": "hash",
+    "vulnerable": true,
+    "note": "hashAlg1 resolves to MD5 in benchmark.properties -> weak hash"
+  },
+  {
+    "test_name": "BenchmarkTest01651",
+    "category": "hash",
+    "vulnerable": true,
+    "note": "MessageDigest SHA1 weak/broken hash"
+  },
+  {
+    "test_name": "BenchmarkTest02671",
+    "category": "hash",
+    "vulnerable": true,
+    "note": "MessageDigest SHA1 weak hash"
+  },
+  {
+    "test_name": "BenchmarkTest00021",
+    "category": "ldapi",
+    "vulnerable": true,
+    "note": "request.getParameter flows straight into LDAP filter string, no encoding"
+  },
+  {
+    "test_name": "BenchmarkTest00367",
+    "category": "ldapi",
+    "vulnerable": false,
+    "note": "bar = thing.doSomething(g12849) where g12849 is static constant; tainted chain discarded"
+  },
+  {
+    "test_name": "BenchmarkTest00947",
+    "category": "ldapi",
+    "vulnerable": true,
+    "note": "cookie param -> Thing2.doSomething passthrough -> LDAP filter"
+  },
+  {
+    "test_name": "BenchmarkTest00948",
+    "category": "ldapi",
+    "vulnerable": false,
+    "note": "bar overwritten with map keyA safe value before LDAP filter"
+  },
+  {
+    "test_name": "BenchmarkTest01753",
+    "category": "ldapi",
+    "vulnerable": false,
+    "note": "scr.getTheValue safe source constant; Base64 round-trip preserves safe"
+  },
+  {
+    "test_name": "BenchmarkTest01902",
+    "category": "ldapi",
+    "vulnerable": true,
+    "note": "header param survives list remove(0)/get(0) into LDAP filter"
+  },
+  {
+    "test_name": "BenchmarkTest00132",
+    "category": "pathtraver",
+    "vulnerable": false,
+    "note": "switch on 'B' -> bar=bob constant; tainted header unreached at FileInputStream"
+  },
+  {
+    "test_name": "BenchmarkTest01034",
+    "category": "pathtraver",
+    "vulnerable": true,
+    "note": "header param via Base64 round-trip into FileOutputStream path"
+  },
+  {
+    "test_name": "BenchmarkTest01117",
+    "category": "pathtraver",
+    "vulnerable": true,
+    "note": "header-name param via Base64 round-trip into FileInputStream path"
+  },
+  {
+    "test_name": "BenchmarkTest01493",
+    "category": "pathtraver",
+    "vulnerable": false,
+    "note": "bar overwritten with map keyA safe value before new File"
+  },
+  {
+    "test_name": "BenchmarkTest02199",
+    "category": "pathtraver",
+    "vulnerable": true,
+    "note": "getParameterMap value passthrough into new File(bar)"
+  },
+  {
+    "test_name": "BenchmarkTest02378",
+    "category": "pathtraver",
+    "vulnerable": true,
+    "note": "getTheParameter -> Thing2 passthrough into file: URI -> new File"
+  },
+  {
+    "test_name": "BenchmarkTest00016",
+    "category": "securecookie",
+    "vulnerable": false,
+    "note": "cookie.setSecure(true) present -> secure flag set"
+  },
+  {
+    "test_name": "BenchmarkTest00348",
+    "category": "securecookie",
+    "vulnerable": true,
+    "note": "cookie.setSecure(false) -> cookie without secure flag"
+  },
+  {
+    "test_name": "BenchmarkTest00736",
+    "category": "securecookie",
+    "vulnerable": true,
+    "note": "cookie.setSecure(false)"
+  },
+  {
+    "test_name": "BenchmarkTest00903",
+    "category": "securecookie",
+    "vulnerable": true,
+    "note": "cookie.setSecure(false)"
+  },
+  {
+    "test_name": "BenchmarkTest01684",
+    "category": "securecookie",
+    "vulnerable": false,
+    "note": "cookie.setSecure(true) present"
+  },
+  {
+    "test_name": "BenchmarkTest02142",
+    "category": "securecookie",
+    "vulnerable": true,
+    "note": "cookie.setSecure(false)"
+  },
+  {
+    "test_name": "BenchmarkTest00328",
+    "category": "sqli",
+    "vulnerable": true,
+    "note": "(7*42)-106=188>200 FALSE -> bar=param tainted into prepareCall {call bar}"
+  },
+  {
+    "test_name": "BenchmarkTest00333",
+    "category": "sqli",
+    "vulnerable": false,
+    "note": "(7*18)+106=232>200 TRUE -> bar=constant; tainted header unused"
+  },
+  {
+    "test_name": "BenchmarkTest00675",
+    "category": "sqli",
+    "vulnerable": false,
+    "note": "(7*42)-86=208>200 TRUE -> bar=constant"
+  },
+  {
+    "test_name": "BenchmarkTest01003",
+    "category": "sqli",
+    "vulnerable": true,
+    "note": "cookie param survives list remove(0)/get(0) into concatenated SQL"
+  },
+  {
+    "test_name": "BenchmarkTest02266",
+    "category": "sqli",
+    "vulnerable": false,
+    "note": "switch on 'B' -> bar=bob constant into prepareCall"
+  },
+  {
+    "test_name": "BenchmarkTest02727",
+    "category": "sqli",
+    "vulnerable": false,
+    "note": "scr.getTheValue safe source + switch 'B' -> bar=bob constant"
+  },
+  {
+    "test_name": "BenchmarkTest00323",
+    "category": "trustbound",
+    "vulnerable": false,
+    "note": "(7*42)-86=208>200 TRUE -> bar=constant into session.putValue"
+  },
+  {
+    "test_name": "BenchmarkTest00994",
+    "category": "trustbound",
+    "vulnerable": true,
+    "note": "cookie param HtmlUtils.htmlEscape still user-derived, stored in session (CWE-501 not sanitized by HTML escape)"
+  },
+  {
+    "test_name": "BenchmarkTest00995",
+    "category": "trustbound",
+    "vulnerable": true,
+    "note": "cookie param split()[0] tainted -> session.setAttribute key"
+  },
+  {
+    "test_name": "BenchmarkTest01082",
+    "category": "trustbound",
+    "vulnerable": true,
+    "note": "header param substring tainted -> session.setAttribute key"
+  },
+  {
+    "test_name": "BenchmarkTest01616",
+    "category": "trustbound",
+    "vulnerable": true,
+    "note": "param propagator chain -> Thing2 passthrough -> session.putValue"
+  },
+  {
+    "test_name": "BenchmarkTest02263",
+    "category": "trustbound",
+    "vulnerable": true,
+    "note": "(7*42)-106=188>200 FALSE -> bar=param tainted -> session.setAttribute"
+  },
+  {
+    "test_name": "BenchmarkTest00163",
+    "category": "weakrand",
+    "vulnerable": true,
+    "note": "java.util.Random().nextGaussian() for rememberMe token"
+  },
+  {
+    "test_name": "BenchmarkTest00734",
+    "category": "weakrand",
+    "vulnerable": true,
+    "note": "java.util.Random().nextGaussian() for token"
+  },
+  {
+    "test_name": "BenchmarkTest01291",
+    "category": "weakrand",
+    "vulnerable": false,
+    "note": "SecureRandom SHA1PRNG nextBytes -> CSPRNG"
+  },
+  {
+    "test_name": "BenchmarkTest01536",
+    "category": "weakrand",
+    "vulnerable": false,
+    "note": "SecureRandom SHA1PRNG nextDouble -> CSPRNG"
+  },
+  {
+    "test_name": "BenchmarkTest02038",
+    "category": "weakrand",
+    "vulnerable": true,
+    "note": "java.lang.Math.random() for token"
+  },
+  {
+    "test_name": "BenchmarkTest02258",
+    "category": "weakrand",
+    "vulnerable": false,
+    "note": "SecureRandom SHA1PRNG via getNextNumber -> CSPRNG"
+  },
+  {
+    "test_name": "BenchmarkTest00520",
+    "category": "xpathi",
+    "vulnerable": false,
+    "note": "(7*18)+106=232>200 TRUE -> bar=constant in XPath expr"
+  },
+  {
+    "test_name": "BenchmarkTest00683",
+    "category": "xpathi",
+    "vulnerable": false,
+    "note": "(7*18)+106=232>200 TRUE -> bar=constant in XPath expr"
+  },
+  {
+    "test_name": "BenchmarkTest01479",
+    "category": "xpathi",
+    "vulnerable": false,
+    "note": "(7*42)-86=208>200 TRUE -> bar=constant in XPath expr"
+  },
+  {
+    "test_name": "BenchmarkTest01562",
+    "category": "xpathi",
+    "vulnerable": false,
+    "note": "switch on 'B' -> bar=bob constant in XPath expr"
+  },
+  {
+    "test_name": "BenchmarkTest01735",
+    "category": "xpathi",
+    "vulnerable": false,
+    "note": "(7*18)+106=232>200 TRUE -> bar=constant"
+  },
+  {
+    "test_name": "BenchmarkTest01821",
+    "category": "xpathi",
+    "vulnerable": false,
+    "note": "scr.getTheValue safe source + always-true guard -> bar=constant"
+  },
+  {
+    "test_name": "BenchmarkTest00646",
+    "category": "xss",
+    "vulnerable": false,
+    "note": "list get(1)=moresafe safe value; tainted param not reached at println"
+  },
+  {
+    "test_name": "BenchmarkTest01253",
+    "category": "xss",
+    "vulnerable": true,
+    "note": "map keyB=param tainted -> getWriter().format(bar,obj) user-controlled format string to HTML"
+  },
+  {
+    "test_name": "BenchmarkTest01917",
+    "category": "xss",
+    "vulnerable": false,
+    "note": "ESAPI encodeForHTML(param) sanitizes before getWriter().print"
+  },
+  {
+    "test_name": "BenchmarkTest02055",
+    "category": "xss",
+    "vulnerable": true,
+    "note": "Referer -> Thing2 passthrough -> println unescaped"
+  },
+  {
+    "test_name": "BenchmarkTest02684",
+    "category": "xss",
+    "vulnerable": false,
+    "note": "scr.getTheValue safe source + always-true guard -> bar=constant"
+  },
+  {
+    "test_name": "BenchmarkTest02696",
+    "category": "xss",
+    "vulnerable": false,
+    "note": "getTheValue safe + switch 'B' -> bar=bob constant"
+  }
+]

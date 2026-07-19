@@ -8,6 +8,44 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] — 2026-07-19
+
+**Credibility and universality.** This release makes SENTINEL's accuracy externally checkable and closes
+the last major stack gap. The six-phase workflow, STRIDE core, severity/confidence rubrics, evidence
+standard, and report template are all unchanged — this is a MAJOR bump only because it adds an
+externally-reproducible validation suite and a new stack playbook the catalog now routes to.
+
+> **Version note.** A separate 4.0.0 was planned earlier but never cut; the live skill was still at
+> 3.0.0. This is the real next major release after 3.0.0. The interoperability/proof work that was
+> scoped as "5.0" landed in the same session and is recorded under [5.0.0] below; the two entries
+> describe two milestones completed back-to-back, not two historical releases.
+
+### Added
+- **Java / Spring stack playbook** (`references/stack-playbooks/java-spring.md`) — servlets, Spring
+  MVC/Boot, JDBC/JPA. Covers the method-vs-URL authorization gap, string-built SQL/JPQL, `Runtime.exec`/
+  `ProcessBuilder` command injection, servlet-writer XSS, mass assignment via `@ModelAttribute`, weak
+  crypto/hash/`Random` (including algorithms resolved from a properties file), insecure cookies, and
+  trust-boundary violations into the session. Brings the playbook count 12 → 13. Indexed in
+  `stack-playbooks.md` and cross-linked to catalog + remediation entries; `scripts/check_repo.py` passes.
+- **External validation suite** (`validation/`) — a reproducible, static-analysis-only accuracy harness:
+  - `validation/sample_benchmark.py` draws a blind, seed-fixed, stratified sample of OWASP Benchmark
+    cases (reads only name+category, never the truth flag).
+  - `validation/score.py` computes per-category TP/FP/FN/TN and precision/recall/F1 against the Benchmark
+    ground truth, reading the truth column in exactly one place; `validation/test_score.py` covers it
+    with 10 unit tests.
+  - `validation/owasp-benchmark-results.md` — **dated 2026-07-19**, real numbers on a 66-case blind
+    sample: SENTINEL 31 TP / 0 FP / 0 FN / 35 TN (precision 1.0000, recall 1.0000, F1 1.0000), verified
+    against the answer key with zero mismatches, with an explicit honesty note on why the Benchmark's
+    deterministic cases are tractable for a traced-dataflow pass.
+  - `validation/juice-shop-results.md` — **dated 2026-07-19**, a five-finding audit of a Juice Shop v20.1.1
+    Express/TypeScript slice (SQLi, basket IDOR, unverified password change, sandboxed-eval RCE, MD5
+    password hashing), each cross-referenced to the documented Juice Shop challenge that is its ground
+    truth.
+
+### Unchanged (deliberately)
+- The six-phase workflow, STRIDE step, report template, severity and confidence rubrics, the evidence
+  standard, and the read-only/report-only default. No phase name, number, or output-format section moved.
+
 ## [3.0.0] — 2026-07-13
 
 Broadens SENTINEL from a Next.js/Supabase-plus-LLM tool into a framework for **any language, framework,
