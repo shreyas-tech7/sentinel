@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://owasp-sentinel.dev/schema/finding.schema.json",
+  "title": "SENTINEL Finding",
+  "description": "One security finding emitted by a SENTINEL (security-audit skill) audit. This is a machine-readable serialization of a single entry from the Phase 5 'Findings' section of the prose report; the prose report remains SENTINEL's primary, human-facing output and is never replaced by this. The schema is a stable, versioned contract that downstream tools (e.g. Gauntlet, ReconBrief) can consume. SENTINEL itself does not call into any downstream tool.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "severity",
+    "confidence",
+    "classification",
+    "location",
+    "analysis",
+    "attack_scenario",
+    "impact",
+    "remediation_summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Version of this finding schema. Semantic-versioned; consumers should reject a major version they do not understand. Starts at 1.0.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "examples": ["1.0"]
+    },
+    "id": {
+      "description": "Stable identifier for this finding, unique within a single audit report. Stable means: re-serializing the same finding from the same report yields the same id. Recommended form is a short slug of the SENTINEL class plus a per-report counter, e.g. 'SENT-AUTHZ-01-001'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "examples": ["SENT-AUTHZ-01-001", "finding-3"]
+    },
+    "title": {
+      "description": "Short descriptive title of the finding — the same text as the prose report's finding heading, minus the severity tag.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "examples": ["Broken object-level authorization on basket retrieval"]
+    },
+    "severity": {
+      "description": "Impact rating, using SENTINEL's four-level rubric. Rates the exposed gap, not intent.",
+      "type": "string",
+      "enum": ["Critical", "High", "Medium", "Low"]
+    },
+    "confidence": {
+      "description": "How sure the finding is real, orthogonal to severity. High = vulnerable path and missing control both visible in the code seen; Medium = reachability or a compensating control depends on code/config not seen; Low = inferred from pattern, needs runtime/environment verification.",
+      "type": "string",
+      "enum": ["High", "Medium", "Low"]
+    },
+    "classification": {
+      "description": "Structured taxonomy references. OWASP category and CWE are separate fields, not one concatenated string, so a consumer can filter or join on either independently.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cwe"],
+      "properties": {
+        "sentinel_class": {
+          "description": "The SENTINEL catalog class id this finding was detected under, if one applies (references/vulnerability-catalog.md).",
+          "type": "string",
+          "pattern": "^SENT-[A-Z]+-[0-9]+$",
+          "examples": ["SENT-AUTHZ-01", "SENT-INJ-01"]
+        },
+        "owasp": {
+          "description": "OWASP category identifiers this finding maps to. Each entry is one id (Top 10, API Security Top 10, or LLM Top 10) with its edition year, exactly as cited in the catalog. May be empty for findings with no clean OWASP mapping.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "examples": ["A01:2021", "API1:2023", "LLM01:2025"]
+          },
+          "default": []
+        },
+        "cwe": {
+          "description": "CWE identifiers, as integers (the numeric part of 'CWE-89'). At least one is required; use an empty-safe mapping only when no CWE applies is impossible, so this array must hold at least one entry.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "examples": [[89], [639, 862]]
+        }
+      }
+    },
+    "location": {
+      "description": "Where the finding lives. Mirrors the prose report's 'Location' line as structured fields.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file"],
+      "properties": {
+        "file": {
+          "description": "Repository-relative path of the file the finding anchors to.",
+          "type": "string",
+          "minLength": 1,
+          "examples": ["routes/basket.ts"]
+        },
+        "line": {
+          "description": "1-indexed line number the finding anchors to, when a single line is meaningful. Null or omitted when the finding spans a function or has no precise line.",
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "function_or_endpoint": {
+          "description": "The function, method, route, or endpoint the finding is in, when applicable (e.g. 'retrieveBasket()' or 'GET /rest/basket/:id').",
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "analysis": {
+      "description": "Vulnerability analysis: what the flaw is and why it exists. Prose, from the report's 'Vulnerability Analysis'.",
+      "type": "string",
+      "minLength": 1
+    },
+    "attack_scenario": {
+      "description": "Concrete steps an attacker takes, with a minimal example request/payload. Illustrative and defense-oriented, per SENTINEL's scope — never a weaponized exploit.",
+      "type": "string",
+      "minLength": 1
+    },
+    "impact": {
+      "description": "What is lost or controlled, and the blast radius.",
+      "type": "string",
+      "minLength": 1
+    },
+    "remediation_summary": {
+      "description": "The fix in prose (the 'Remediation' paragraph). The full before/after remediation code from the report is optional structured detail in remediation_code; this field is always the human-readable summary.",
+      "type": "string",
+      "minLength": 1
+    },
+    "remediation_code": {
+      "description": "Optional secure, drop-in remediation code, as shipped in the report for Critical/High findings.",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "description": "Language/framework of the snippet, e.g. 'typescript', 'python', 'java'.",
+          "type": "string"
+        },
+        "before": {
+          "description": "The vulnerable code, if shown.",
+          "type": ["string", "null"]
+        },
+        "after": {
+          "description": "The fixed, fail-closed replacement.",
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "falsifier": {
+      "description": "The specific code or configuration that, if it existed somewhere not shown, would make this a non-issue (an RLS policy, a middleware, a framework default). Populated especially when confidence is below High, per SENTINEL's evidence standard.",
+      "type": ["string", "null"]
+    },
+    "references": {
+      "description": "Optional external reference URLs (advisories, docs, challenge catalogue entries).",
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "default": []
+    }
+  }
+}

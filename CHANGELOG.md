@@ -8,6 +8,55 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] — 2026-07-19
+
+**Proof and interoperability.** Building directly on 4.0.0 (produced in the same session), this release
+makes SENTINEL's findings machine-consumable, keeps the standards it cites from silently ageing, proves
+the regression-audit mode end-to-end, and puts SENTINEL's accuracy next to an established tool's on the
+same test cases. As with every release since 1.0, the six-phase workflow, STRIDE core, severity and
+confidence rubrics, evidence standard, prose report template, and the `security-audit` skill name are
+all unchanged — everything below is additive.
+
+### Added
+- **Findings interoperability schema** (`schema/finding.schema.json`, JSON Schema draft 2020-12) — a
+  stable, versioned (`schema_version` `"1.0"`) contract for one SENTINEL finding: `id`, `title`,
+  `severity`, `confidence`, a **structured `classification`** (`sentinel_class`, `owasp[]`, and `cwe[]`
+  as separate fields — never one concatenated string), a structured `location` (`file`/`line`/
+  `function_or_endpoint`), `analysis`, `attack_scenario`, `impact`, `remediation_summary`, plus optional
+  `remediation_code`, `falsifier`, and `references`.
+  - A new **"Structured findings export"** step after Phase 5 in `SKILL.md` serializes every finding in
+    the prose report to this schema. It is **additive and mechanical** — the Markdown report format,
+    phase names, numbering, and severity rubric are untouched, and the export re-decides nothing.
+  - `docs/FINDINGS_SCHEMA.md` documents the contract with a worked example, and states plainly that it
+    exists for **Gauntlet** and **ReconBrief** to consume — SENTINEL does not call into either, and
+    building the consumer side is out of scope here.
+  - `scripts/check_schema.py` (stdlib-only, in CI) keeps the schema and its documented example in sync.
+- **Standards-currency check** (`scripts/check_standards_currency.py` + `references/standards-versions.md`)
+  — records the edition of each cited standard (OWASP Top 10, API Security Top 10, LLM Top 10, CWE
+  list/Top 25, ASVS) and flags, **for human review**, when a newer edition exists. It never auto-migrates
+  the catalog; adopting a new edition remains a deliberate, reviewed project. Added an ASVS row to the
+  catalog's framework-mapping table so the manifest tracks exactly what the catalog cites. Wired into CI.
+- **Comparative external validation** — Semgrep 1.170.0 (official `semgrep/semgrep-rules` Java ruleset)
+  run against the *same* 66-case blind OWASP Benchmark sample and scored by the same harness, reported
+  side by side in `validation/owasp-benchmark-results.md` (dated 2026-07-19): SENTINEL P/R/F1 =
+  1.0000/1.0000/1.0000 vs. Semgrep 0.6250/0.9677/0.7595. The two agree closely on recall; the precision
+  gap is entirely Semgrep firing on the Benchmark's dead-taint decoys — the exact discipline SENTINEL's
+  evidence standard enforces. The registry endpoint `semgrep.dev` was blocked by the environment, so the
+  ruleset was sourced from its canonical GitHub repo (commit pinned); this is documented in the results.
+- **Regression-audit proof** (`validation/regression-mode-example.md`) — a worked, end-to-end example on
+  a real Juice Shop fix pass (local, uncommitted) where each Phase 4 re-audit bucket fires on genuine
+  code: one finding **Resolved**, one **Still open**, one **Regressed** (control added then removed,
+  caught by `git log -S`), one **Newly introduced** by the fix pass.
+- **New re-audit bucket — Regressed.** Phase 4's re-audit delta gains an explicit **Regressed** bucket
+  (a control that was added and later re-opened/weakened), distinct from "Still open" (never fixed). The
+  prior Resolved / Still open / Newly introduced buckets are unchanged.
+
+### Version note
+No separate 4.0.0 was ever released before this session — the live skill was at 3.0.0. The [4.0.0] entry
+below and this [5.0.0] entry are two milestones completed back-to-back and shipped together: 4.0.0 is the
+credibility/validation body of work, 5.0.0 the interoperability/proof body of work. They are recorded
+separately to keep the two goals legible, not to imply two historical releases.
+
 ## [4.0.0] — 2026-07-19
 
 **Credibility and universality.** This release makes SENTINEL's accuracy externally checkable and closes

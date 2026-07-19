@@ -30,6 +30,26 @@ jobs:
       - name: Check repository invariants
         run: python scripts/check_repo.py
 
+      # Flag when a cited standard (OWASP/CWE/ASVS) has a newer edition than the
+      # catalog is grounded in. Advisory: prompts a reviewed migration, never
+      # auto-migrates. Standard library only.
+      - name: Check standards currency
+        run: python scripts/check_standards_currency.py
+
+      # Findings interoperability schema is well-formed and its documented
+      # worked example still conforms. Standard library only.
+      - name: Check findings schema
+        run: python scripts/check_schema.py
+
+      # Unit tests for the validation scoring harness (precision/recall/F1).
+      - name: Validation harness tests
+        run: python -m unittest discover -s validation -p 'test_*.py'
+
+      # Skill package rules: single root SKILL.md, kebab-case invariant name,
+      # description < 1024 chars with no angle brackets, semver version.
+      - name: Check skill package
+        run: python scripts/check_skill_package.py
+
   secret-scan:
     name: Secret scan (full history)
     runs-on: ubuntu-latest

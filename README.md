@@ -4,7 +4,7 @@
 software — any language, any framework, any artifact type.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-5.0.0-informational.svg)](CHANGELOG.md)
 [![Use: defensive only](https://img.shields.io/badge/use-defensive%20only-important.svg)](SECURITY.md)
 
 SENTINEL is a persona and a fixed six-phase workflow that audits source code the way a careful staff
@@ -25,8 +25,14 @@ It runs as a [Claude Code / Cursor skill](docs/how-to-use.md), or as a
 [standalone prompt](prompts/sentinel-master-prompt.md) you paste into any chat model. The methodology is
 framework-agnostic; the [playbooks](skill/references/stack-playbooks.md) open with a generic checklist
 for any stack, then go sharp on Supabase, Next.js, serverless/edge, LLM/RAG, Python (Django/Flask/
-FastAPI), Firebase, Rails, PHP (Laravel/WordPress), Node+Mongo, Go, and mobile — with separate
+FastAPI), Firebase, Rails, PHP (Laravel/WordPress), Node+Mongo, Go, Java/Spring, and mobile — with separate
 [artifact playbooks](skill/references/artifact-playbooks.md) for extensions, bots, CLIs, and desktop apps.
+
+As of **v5.0**, every finding can also be exported to a stable, versioned
+[machine-readable schema](docs/FINDINGS_SCHEMA.md) alongside the prose report, SENTINEL's accuracy is
+[validated against OWASP Benchmark and Juice Shop and compared head-to-head with Semgrep](validation/),
+and a [standards-currency check](scripts/check_standards_currency.py) flags when a cited standard
+publishes a newer edition.
 
 ---
 
@@ -231,13 +237,30 @@ sentinel/
 ├── skill/                 # the drop-in Claude/Cursor skill (methodology + references)
 │   ├── SKILL.md
 │   └── references/        # vulnerability catalog · remediation patterns · tooling · artifact playbooks
-│       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, firebase, …)
+│       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, java-spring, …)
+├── schema/                # finding.schema.json — machine-readable findings contract (v5.0)
+├── validation/            # accuracy harness + dated results (Benchmark, Juice Shop, Semgrep, regression)
 ├── prompts/               # standalone master prompt + quick single-file variant
-├── docs/                  # methodology · threat modeling · Supabase RLS guide · how-to-use
+├── docs/                  # methodology · threat modeling · Supabase RLS guide · findings schema · how-to-use
 ├── examples/              # three redacted example audits
-├── scripts/               # check_repo.py — link, anchor, class-parity, and secret checks
+├── scripts/               # check_repo.py, check_standards_currency.py, check_schema.py
 └── .github/               # issue templates + CI workflow and notes
 ```
+
+## Known limits & what's out of scope
+
+- **Static analysis only.** SENTINEL reads code; it never executes, deploys, or attacks anything.
+  Findings that genuinely need runtime behavior to confirm are named as such and left to dynamic tools
+  (that boundary is deliberate — it is Gauntlet's job, not this one's).
+- **Consuming the findings schema is out of scope here.** `schema/finding.schema.json` is a contract
+  SENTINEL *publishes*; wiring it into **Gauntlet** or **ReconBrief** belongs to those repositories.
+  SENTINEL never calls into them.
+- **Validation numbers are a matched-sample accuracy check, not a throughput claim.** The
+  [Benchmark/Semgrep comparison](validation/owasp-benchmark-results.md) is a 66-case blind sample; it
+  does not assert the same accuracy at full scale or on arbitrary real-world code, and it is not a
+  scanner replacement — scanners remain the right Phase-3 lead generators.
+- **Regression audit needs history.** Phase 4 is only as sharp as the commit history available; without
+  it, the phase runs as a static pass and says so.
 
 ## License
 

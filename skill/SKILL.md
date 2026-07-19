@@ -2,7 +2,7 @@
 name: security-audit
 description: Security and code-health audit framework for source code and architecture, especially rapidly built or AI-generated ("vibe-coded") artifacts. Use whenever the user asks to audit, security-review, pentest, threat-model, or harden code; mentions IDOR, broken authorization, exposed secrets, RLS, injection, XSS, CSRF, SSRF, insecure config, predictable tokens, architectural drift, race conditions, or dead code; asks whether an app is safe to hand to an autonomous agent; or wants mobile, browser-extension, bot/webhook, or CLI security. Also on a non-technical founder asking "is my app safe to launch" and on vibe-coding hardening that never mentions AI. Drives a six-phase review (inventory, trust boundaries, STRIDE, adversarial scan, regression audit, severity-rated remediation with drop-in code) across any language, framework, or artifact type — Node, Python, Go, Next.js, Rails, Supabase, Firebase, mobile, extensions, bots, CLIs. Trigger even when the user never says "audit" but asks whether code is secure.
 metadata:
-  version: "4.0.0"
+  version: "5.0.0"
 ---
 
 # Security Audit
@@ -173,9 +173,10 @@ When the user has applied fixes and asks for a re-check, run the **full** audit 
 
 - **Resolved** — each previously Critical/High finding confirmed *actually closed*, by pointing at the control that now stops it — not merely that the symptom moved. A fix that relocates the vulnerable code without adding the missing control is *not* resolved.
 - **Still open** — prior findings whose control is still absent on the live path, with the original severity.
-- **Newly introduced** — findings created *by the fix itself*. This is a real and common vibe-coding failure: an IDOR patched by adding an auth check that has its own logic bug, an atomic-rewrite that swallowed an error, a new validation that fails open. Scrutinize the diff that closed each prior finding as hard as you scrutinize new code (SENT-ARCH-05).
+- **Regressed** — a finding that was *resolved earlier* (its control was added) and has since been **re-opened or weakened** by a later change. This is the SENT-ARCH-05 / SENT-ARCH-04 signature applied across re-audit rounds: `git log -S '<control identifier>'` shows the control added and then removed. Distinguish it from "Still open" (never fixed) — a regression means a control existed and was lost, which is the most alarming delta because someone believed the issue was closed. Restore the original severity.
+- **Newly introduced** — findings created *by the fix itself*, or otherwise absent from the original report. This is a real and common vibe-coding failure: an IDOR patched by adding an auth check that has its own logic bug, an atomic-rewrite that swallowed an error, a new validation that fails open, a debug helper added during the fix pass. Scrutinize the diff that closed each prior finding as hard as you scrutinize new code (SENT-ARCH-05).
 
-Each delta finding still passes the full Phase 5 evidence standard and severity/confidence rubric; the delta is a presentation layer, never a lighter pass.
+Each delta finding still passes the full Phase 5 evidence standard and severity/confidence rubric; the delta is a presentation layer, never a lighter pass. A worked end-to-end example — a real fix pass that resolves one finding, leaves one open, regresses one, and introduces one — is in [`validation/regression-mode-example.md`](../validation/regression-mode-example.md).
 
 ## PHASE 5 — Deliver remediation
 
@@ -278,6 +279,14 @@ The brief is a **translation layer over the same analysis — not a second, soft
 
 Map severity to the two buckets honestly: Critical/High → "Fix before launch," Medium/Low → "Worth doing, not urgent." Never move a Critical into the second bucket to make the brief more reassuring — the buckets are a rename of the rubric, not an escape from it. Drop all IDs and payloads; keep the real-world analogy concrete and specific to *their* app, not a generic metaphor.
 
+### Optional: Structured findings export (machine-readable output)
+
+The prose report above is the primary output and is **always produced** — remediation depends on it, and this export never replaces, reorders, or reformats it. **In addition**, when the user asks for a machine-readable export, or names a downstream tool that consumes findings (e.g. Gauntlet, ReconBrief), serialize every finding already written in the Phase 5 report to the JSON contract in [`../schema/finding.schema.json`](../schema/finding.schema.json). This is a mechanical translation step, run *after* Phase 5 — it re-decides nothing. Do not alter any severity, confidence, classification, or wording during export; a finding that is not in the prose report does not appear in the export, and vice versa.
+
+- Emit a JSON array of finding objects, each conforming to the schema: `schema_version` (`"1.0"`), a stable `id`, `title`, `severity`, `confidence`, a structured `classification` (`sentinel_class`, `owasp[]`, and `cwe[]` as separate fields — never one concatenated string), `location` (`file` / `line` / `function_or_endpoint`), `analysis`, `attack_scenario`, `impact`, and `remediation_summary`. Optional `remediation_code`, `falsifier`, and `references` carry the rest of the report's detail when present.
+- The severity and confidence enums, and the source·sink·missing-control·falsifier evidence standard, are exactly those of the prose report — the export is a view over the same verified findings, not a lighter pass.
+- **SENTINEL does not call into Gauntlet or ReconBrief, or run anything, as part of this step.** It exposes a stable, versioned contract; consuming it is the downstream tool's job. See [`../docs/FINDINGS_SCHEMA.md`](../docs/FINDINGS_SCHEMA.md) for the contract and a worked example.
+
 ---
 
 ## Maintaining this skill
@@ -287,6 +296,7 @@ Security knowledge ages. Keep the skill useful over time by extending the refere
 - Add new framework playbooks as a new file under `references/stack-playbooks/`, following the existing shape (key, trust model, top traps, test method), and add a row to the index table in `references/stack-playbooks.md`. Add new *artifact-type* playbooks (a platform whose entry points aren't routes) to `references/artifact-playbooks.md`. The playbooks are meant to keep growing a stack or artifact type at a time, as SENTINEL meets targets it doesn't yet cover.
 - When a new vulnerability class or notable CVE pattern appears, add it to `references/vulnerability-catalog.md` with detection guidance and a fix in `references/remediation-patterns.md`. A class is not complete until it exists in both files and is reachable from the Phase 3 scan; the repo's `scripts/check_repo.py` enforces the first two.
 - Add new scanners to `references/tooling.md` with the one thing tool documentation always omits: what the tool systematically *misses*. A tool whose blind spots are undocumented gets trusted past its competence, which is worse than not running it.
-- The framework-mapping tables in the catalog reference the editions current at version 3.0.0; refresh them as OWASP, the API and LLM Top 10s, and the CWE Top 25 publish new editions. Bump the `metadata.version` when you do.
+- The framework-mapping tables in the catalog reference specific editions of OWASP Top 10, the API and LLM Top 10s, the CWE list/Top 25, and ASVS. Which edition each is grounded in is recorded in `references/standards-versions.md`, and `scripts/check_standards_currency.py` flags — for human review, never auto-migrating — when a newer edition exists. Refreshing to a new edition is a deliberate, reviewed project (re-check every `Classification:` line); bump the `metadata.version` when you do it.
+- **Findings interoperability.** Every finding in the Phase 5 report can be exported to the machine-readable contract in `schema/finding.schema.json` (see the "Structured findings export" step and `docs/FINDINGS_SCHEMA.md`). Keep the export a faithful view of the prose report; when adding a field, bump the schema's `schema_version` and update the worked example so `scripts/check_schema.py` stays green.
 - **Known limitation — commit history.** The Phase 4 iterative regression audit is only as sharp as the history available. `references/tooling.md` gives the git archaeology that makes it sharp when history exists; nothing recovers it when history doesn't. Say so in the report rather than implying the phase ran fully.
 - **Deliberate limitation — tools stay advisory.** Static analysis is integrated as *lead generation* only. Having SENTINEL run scanners and transcribe their output into findings would invert the discipline the skill exists to enforce — that a finding requires a traced data flow and a named falsifier. A future version that ingests SARIF should feed the Phase 3 candidate list, never the Phase 5 report.
