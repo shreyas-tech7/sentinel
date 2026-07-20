@@ -8,6 +8,91 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] — 2026-07-19
+
+**Validation at scale, and a corrected headline.** This release is entirely about evidence: it scales
+the external validation to the size the 4.0.0 work actually called for, adds a second language, and
+scores the Juice Shop pass against ground truth instead of listing findings. No phase, rubric, schema,
+or check from 5.0.0 changed — the six-phase workflow, STRIDE core, severity and confidence rubrics,
+evidence standard, prose report template, findings schema, standards-currency check, and the
+`security-audit` skill name are all untouched.
+
+The most important thing in this release is a correction. **5.0.0 reported a perfect 1.0000 F1 on a
+66-case blind Benchmark sample. That result did not survive scaling.** At 110 Java cases SENTINEL
+scores **F1 0.9358**, and the eight cases it got wrong are documented individually with root causes.
+The earlier run is preserved, not overwritten; the new numbers are stated as superseding it.
+
+### Added
+- **Scaled Benchmark validation — 208 blind cases across two languages** (`validation/owasp-benchmark-results.md`,
+  new dated section; the 66-case run is preserved above it).
+  - **110 Java cases** (10/category × 11) from BenchmarkJava v1.2 @ `79b9bd6`, and **98 Python cases**
+    (7/category × 14) from **BenchmarkPython v0.1 @ `f129148`** — a *separate repository*, since
+    BenchmarkJava contains no Python at all. Drawn by the existing seed-fixed blind sampler.
+  - Real, unrounded results:
+
+    | Run | N | TP | FP | FN | TN | Precision | Recall | F1 |
+    |---|---|---|---|---|---|---|---|---|
+    | SENTINEL — Java | 110 | 51 | 5 | 2 | 52 | 0.9107 | 0.9623 | **0.9358** |
+    | SENTINEL — Python | 98 | 30 | 1 | 0 | 67 | 0.9677 | 1.0000 | **0.9836** |
+    | Semgrep 1.170.0 — Java | 110 | 45 | 26 | 8 | 31 | 0.6338 | 0.8491 | 0.7258 |
+    | Semgrep 1.170.0 — Python (security-category rules) | 98 | 19 | 22 | 11 | 46 | 0.4634 | 0.6333 | 0.5352 |
+
+  - Semgrep re-run at the same scale on the identical files, same version and same ruleset commit
+    (`e5b5a42`) as the 66-case comparison, so the head-to-head stays apples-to-apples. Its Java figures
+    are stable across both samples (F1 0.7595 → 0.7258); SENTINEL's are not, which is the finding.
+  - **Semgrep's Python result is reported two ways, deliberately.** Under the Java convention (≥1
+    finding in the file = flagged) it flags all 98 files for F1 0.4687 — an artifact, because the
+    *maintainability* rule `useless-inner-function` fires on every Benchmark Python case. A
+    security-category-only variant is reported alongside it and is the figure to cite.
+  - **Full error analysis.** All eight Java/Python misses trace to three named causes: treating
+    `SeparateClassRequest.getTheValue` (which returns a hardcoded `"bar"`) as a real source (5 FPs);
+    ruling out tainted `Runtime.exec` `envp` as non-exploitable, against SENTINEL's own
+    false-negative-averse principle (2 FNs); and treating a statically-bound Flask route segment as
+    attacker-controlled (1 FP). Not one miss came from failing to trace a dataflow.
+  - Records honestly that the Python run, while blind to its own answer key, is **not independent** of
+    the Java run — the `getTheValue` lesson carried over to its Python twin `get_safe_value` — so the
+    Java figure is the better estimate of cold performance and the Python figure is an upper bound.
+- **Scored Juice Shop coverage pass** (`validation/juice-shop-results.md`, new dated section; the
+  five-finding slice is preserved). 10 files, 2150 lines, 40 documented challenges, **21 findings** each
+  carrying the full source · sink · missing-control · falsifier evidence standard.
+  **Precision 1.0000, recall 0.7750, F1 0.8732** (TP 31 / FP 0 / FN 9).
+  - **Phase 3 section D is now genuinely exercised** — the gap the 4.0.0 ask flagged. `routes/chat.ts`
+    is a real agentic surface (an `ai`-SDK `streamText` loop with four tools), and all three documented
+    challenges implemented there were found: `generateCoupon` bounds its discount only inside a zod
+    `.describe()` string with no server-side clamp (`chatbotPromptInjection` + `chatbotGreedyInjection`),
+    the system prompt carries a `CONFIDENTIAL` block recoverable by injection, and tool-call events
+    stream to every caller with the role gate living in a client-set cookie (`aiDebugging`). Indirect
+    prompt injection via user-writable review text is reported as an unscored finding.
+  - Records one finding **correctly not made**: the `$where` string concatenation in `getProductReviews`
+    is not injectable, because `Number()` coerces any payload to `NaN`. Reporting it would have been a
+    false positive; the falsifier step is what caught that.
+  - The nine misses are documented: eight from reading `login.ts`, producing the SQL-injection finding,
+    and stopping before a block of hardcoded plaintext credentials; one from seeing
+    `security.sanitizeLegacy` applied and never asking whether a one-pass regex is an adequate sanitiser.
+- **`validation/score_juiceshop.py`** — derives the Juice Shop answer key from the target rather than by
+  hand, unioning the app's own `vuln-code-snippet` markers with `solveIf(challenges.<key>)` call sites
+  and validating every key against `data/static/challenges.yml`.
+- **`validation/show_cases.py`** — a presentation-only reading aid for working through a Benchmark
+  sample. It strips license headers and provably-inert boilerplate and decides nothing, consistent with
+  the standing rule that tools produce leads and the audit produces findings.
+
+### Changed
+- `validation/score.py` and `validation/sample_benchmark.py` now **auto-discover** `expectedresults-*.csv`
+  instead of hardcoding the Java suite's filename, so one harness serves both Benchmark suites
+  (`--expected-csv` overrides; an ambiguous checkout is an error rather than a silent coin flip). The
+  original 66-case numbers reproduce **exactly** under the changed harness — verified before any new
+  analysis was run.
+- `validation/test_score.py` — 10 tests to 15, covering ground-truth discovery for both suites,
+  explicit-path precedence, and the missing/ambiguous cases.
+- `README.md` — the 66-case figure is no longer the headline; the 208-case table leads, states plainly
+  that it supersedes the earlier perfect score, and the scope limits now name the not-blind status of
+  the Juice Shop pass and Benchmark's synthetic nature.
+
+### Deliberately not done
+- **DVWA / NodeGoat.** Flagged as worthwhile since 4.0.0 and deprioritised a third time. Adding a PHP or
+  second Node/Mongo target would broaden the validated set beyond Java, Python, and Node/Express, and it
+  remains the obvious next step — but it was not started rather than rushed.
+
 ## [5.0.0] — 2026-07-19
 
 **Proof and interoperability.** Building directly on 4.0.0 (produced in the same session), this release

@@ -28,11 +28,26 @@ for any stack, then go sharp on Supabase, Next.js, serverless/edge, LLM/RAG, Pyt
 FastAPI), Firebase, Rails, PHP (Laravel/WordPress), Node+Mongo, Go, Java/Spring, and mobile — with separate
 [artifact playbooks](skill/references/artifact-playbooks.md) for extensions, bots, CLIs, and desktop apps.
 
-As of **v5.0**, every finding can also be exported to a stable, versioned
-[machine-readable schema](docs/FINDINGS_SCHEMA.md) alongside the prose report, SENTINEL's accuracy is
-[validated against OWASP Benchmark and Juice Shop and compared head-to-head with Semgrep](validation/),
-and a [standards-currency check](scripts/check_standards_currency.py) flags when a cited standard
-publishes a newer edition.
+Every finding can also be exported to a stable, versioned
+[machine-readable schema](docs/FINDINGS_SCHEMA.md) alongside the prose report, and a
+[standards-currency check](scripts/check_standards_currency.py) flags when a cited standard publishes a
+newer edition.
+
+As of **v6.0**, accuracy is [measured on 208 blind OWASP Benchmark cases across two
+languages](validation/owasp-benchmark-results.md), head-to-head with Semgrep on the identical files:
+
+| Blind sample (2026-07-19) | N | Precision | Recall | F1 |
+|---|---|---|---|---|
+| **SENTINEL — Benchmark Java** | 110 | 0.9107 | 0.9623 | **0.9358** |
+| **SENTINEL — Benchmark Python** | 98 | 0.9677 | 1.0000 | **0.9836** |
+| Semgrep 1.170.0 — Java | 110 | 0.6338 | 0.8491 | 0.7258 |
+| Semgrep 1.170.0 — Python | 98 | 0.4634 | 0.6333 | 0.5352 |
+
+These supersede an earlier 66-case Java-only run that scored a perfect 1.0000 F1 — **that result did
+not survive scaling**, and the eight cases it got wrong at 110 are individually documented with root
+causes. A separate [Juice Shop pass](validation/juice-shop-results.md) scores 21 findings against the
+app's own documented challenges (precision 1.0000, recall 0.7750 over 40 challenges in 10 files) and
+exercises the LLM/prompt-injection surface. That pass is explicitly **not** blind and says so.
 
 ---
 
@@ -238,8 +253,8 @@ sentinel/
 │   ├── SKILL.md
 │   └── references/        # vulnerability catalog · remediation patterns · tooling · artifact playbooks
 │       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, java-spring, …)
-├── schema/                # finding.schema.json — machine-readable findings contract (v5.0)
-├── validation/            # accuracy harness + dated results (Benchmark, Juice Shop, Semgrep, regression)
+├── schema/                # finding.schema.json — machine-readable findings contract (schema_version 1.0)
+├── validation/            # accuracy harness + dated results (Benchmark Java/Python, Juice Shop, Semgrep, regression)
 ├── prompts/               # standalone master prompt + quick single-file variant
 ├── docs/                  # methodology · threat modeling · Supabase RLS guide · findings schema · how-to-use
 ├── examples/              # three redacted example audits
@@ -256,9 +271,15 @@ sentinel/
   SENTINEL *publishes*; wiring it into **Gauntlet** or **ReconBrief** belongs to those repositories.
   SENTINEL never calls into them.
 - **Validation numbers are a matched-sample accuracy check, not a throughput claim.** The
-  [Benchmark/Semgrep comparison](validation/owasp-benchmark-results.md) is a 66-case blind sample; it
-  does not assert the same accuracy at full scale or on arbitrary real-world code, and it is not a
-  scanner replacement — scanners remain the right Phase-3 lead generators.
+  [Benchmark/Semgrep comparison](validation/owasp-benchmark-results.md) is a 208-case blind sample out
+  of ~3970 available cases; it does not assert the same accuracy at full scale or on arbitrary
+  real-world code, and it is not a scanner replacement — scanners remain the right Phase-3 lead
+  generators, and Semgrep scanned all 208 files in seconds where these verdicts were produced by hand.
+  Benchmark is also synthetic: its decoys are deliberate and its shapes repeat, so a good score there
+  does not transfer automatically to messy real code.
+- **The Juice Shop pass is a coverage measure, not a detection test.** Its answer key was derived from
+  the app's own markers *before* the audit, so its recall is not comparable to the blind Benchmark
+  figures. [It says so at the top.](validation/juice-shop-results.md)
 - **Regression audit needs history.** Phase 4 is only as sharp as the commit history available; without
   it, the phase runs as a static pass and says so.
 
