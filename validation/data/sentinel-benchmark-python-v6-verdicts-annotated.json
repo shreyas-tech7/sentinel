@@ -1,0 +1,590 @@
+[
+ {
+  "test_name": "BenchmarkTest00165",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "lst.pop(0) then lst[0] returns param; argList is [sh, -c, f\"echo {bar}\"] so sh -c executes the tainted string even without shell=True."
+ },
+ {
+  "test_name": "BenchmarkTest00167",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "TestParam is \"This should never happen\", so 'should' not in TestParam is False and the else branch assigns bar = param; subprocess.run(argStr, shell=True)."
+ },
+ {
+  "test_name": "BenchmarkTest00168",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "guess = possible[0] = 'A', so match selects bar = param; shell=True."
+ },
+ {
+  "test_name": "BenchmarkTest00431",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "bar = param (attacker-controlled form key) interpolated into the shell string with shell=True."
+ },
+ {
+  "test_name": "BenchmarkTest00432",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "base64 encode/decode round-trip preserves taint; interpolated into the shell string."
+ },
+ {
+  "test_name": "BenchmarkTest00606",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "bar = param from a request header; shell=True."
+ },
+ {
+  "test_name": "BenchmarkTest01097",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Dead-taint guard 7*42-86 = 208 > 200 true; bar is the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00158",
+  "category": "codeinj",
+  "vulnerable": false,
+  "reason": "Guarded: the handler returns early unless bar starts and ends with a single quote and has none inside, so eval only ever sees a plain string literal. Escaping the literal would require an inner quote, which the check rejects."
+ },
+ {
+  "test_name": "BenchmarkTest00159",
+  "category": "codeinj",
+  "vulnerable": true,
+  "reason": "lst.pop(0) then lst[0] returns param, and exec(bar) has no quoted-literal guard."
+ },
+ {
+  "test_name": "BenchmarkTest00600",
+  "category": "codeinj",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' selects bar = 'bob'; constant reaches eval."
+ },
+ {
+  "test_name": "BenchmarkTest00818",
+  "category": "codeinj",
+  "vulnerable": false,
+  "reason": "thing.doSomething is identity so bar is tainted, but the quoted-literal guard returns early before eval."
+ },
+ {
+  "test_name": "BenchmarkTest00821",
+  "category": "codeinj",
+  "vulnerable": false,
+  "reason": "bar = param via the inverted 'should' test, but the quoted-literal guard blocks exec."
+ },
+ {
+  "test_name": "BenchmarkTest00894",
+  "category": "codeinj",
+  "vulnerable": true,
+  "reason": "bar = \"This should never happen\" then 'should' in bar is True so bar = param; exec(bar) with no guard."
+ },
+ {
+  "test_name": "BenchmarkTest00989",
+  "category": "codeinj",
+  "vulnerable": false,
+  "reason": "Tainted via identity reflection, but the quoted-literal guard returns early before exec."
+ },
+ {
+  "test_name": "BenchmarkTest00079",
+  "category": "deserialization",
+  "vulnerable": false,
+  "reason": "bar = param is tainted but the sink is yaml.safe_load, which refuses arbitrary object construction."
+ },
+ {
+  "test_name": "BenchmarkTest00080",
+  "category": "deserialization",
+  "vulnerable": false,
+  "reason": "html.escape applied and the sink is yaml.safe_load."
+ },
+ {
+  "test_name": "BenchmarkTest00269",
+  "category": "deserialization",
+  "vulnerable": true,
+  "reason": "Identity reflection keeps param tainted and the sink is yaml.load(bar, Loader=yaml.Loader) \u2014 the unsafe loader permits arbitrary Python object construction (CWE-502)."
+ },
+ {
+  "test_name": "BenchmarkTest00508",
+  "category": "deserialization",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' so bar = 'bob'; pickle.loads receives a constant, not attacker input."
+ },
+ {
+  "test_name": "BenchmarkTest00509",
+  "category": "deserialization",
+  "vulnerable": false,
+  "reason": "String-immutability decoy: param is appended to string33385, but bar = copy, and copy only ever received 'SomeOKString'. The taint never reaches pickle.loads."
+ },
+ {
+  "test_name": "BenchmarkTest00901",
+  "category": "deserialization",
+  "vulnerable": false,
+  "reason": "configparser keyB holds param but bar reads keyA ('a_Value'); sink is also yaml.safe_load."
+ },
+ {
+  "test_name": "BenchmarkTest00994",
+  "category": "deserialization",
+  "vulnerable": true,
+  "reason": "bar reads map keyB, which holds the tainted query value, and the sink is yaml.load with the unsafe Loader."
+ },
+ {
+  "test_name": "BenchmarkTest00060",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "hashlib.sha1() used to hash a secret written to passwordFile.txt \u2014 broken hash (CWE-328)."
+ },
+ {
+  "test_name": "BenchmarkTest00413",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashlib.sha384() \u2014 strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest00487",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashlib.new('sha512') \u2014 strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest00875",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashlib.new('sha512') \u2014 strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest00882",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashlib.sha512() \u2014 strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest01150",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashlib.sha384() \u2014 strong hash; algorithm choice decides this category regardless of the taint path."
+ },
+ {
+  "test_name": "BenchmarkTest01154",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashlib.sha512() \u2014 strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest00076",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "map keyB read is overwritten by the safe keyA value; the LDAP filter interpolates a constant."
+ },
+ {
+  "test_name": "BenchmarkTest00427",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "bar reads map keyB, which holds the attacker-controlled form key; interpolated into the f-string LDAP filter unescaped."
+ },
+ {
+  "test_name": "BenchmarkTest00430",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "string61762-style slice: 'help'+param+'snapes on a plane' sliced [4:-17] strips exactly the 4-char prefix and 17-char suffix, returning param verbatim. Taint reaches the filter."
+ },
+ {
+  "test_name": "BenchmarkTest00896",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "get_query_parameter is a real source and doSomething is identity; tainted value reaches the LDAP filter."
+ },
+ {
+  "test_name": "BenchmarkTest01095",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' selects bar = 'bob'; constant in the filter."
+ },
+ {
+  "test_name": "BenchmarkTest01169",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value, which returns the constant \"bar\"; additionally lst.pop(0) then lst[1] yields 'moresafe'."
+ },
+ {
+  "test_name": "BenchmarkTest01170",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value (constant) and guess='B' selects 'bob'."
+ },
+ {
+  "test_name": "BenchmarkTest00175",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "configparser keyB holds param and bar reads keyB; f'{TESTFILES_DIR}/{bar}' is opened for write with no containment check."
+ },
+ {
+  "test_name": "BenchmarkTest00276",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "bar reads the safe keyA value, and the handler additionally resolves the path and returns early unless it stays under TESTFILES_DIR."
+ },
+ {
+  "test_name": "BenchmarkTest00441",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Ternary 7*18+106 = 232 > 200 true; bar is the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00523",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "bar = param with no resolve and no containment check; pathlib's / operator lets an absolute path replace the base entirely, so p.exists() becomes an existence oracle for arbitrary filesystem paths."
+ },
+ {
+  "test_name": "BenchmarkTest00617",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Taint survives the slice, but the handler resolves the path and returns early unless it starts with TESTFILES_DIR \u2014 effective containment."
+ },
+ {
+  "test_name": "BenchmarkTest00618",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "bar reads configparser keyB (tainted header name); f'{TESTFILES_DIR}/{bar}' opened for read with no containment check."
+ },
+ {
+  "test_name": "BenchmarkTest00748",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Ternary yields bar = param, but .resolve() plus the startswith containment check returns early before read_text."
+ },
+ {
+  "test_name": "BenchmarkTest00259",
+  "category": "redirect",
+  "vulnerable": false,
+  "reason": "Ternary 7*18+106 = 232 > 200 true; bar is the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00417",
+  "category": "redirect",
+  "vulnerable": false,
+  "reason": "bar reads configparser keyA ('a_Value'); the tainted keyB is never read."
+ },
+ {
+  "test_name": "BenchmarkTest00496",
+  "category": "redirect",
+  "vulnerable": true,
+  "reason": "Ternary (7*42)-106 = 188, not > 200, so bar = param from a request header; flask.redirect(bar) with no allowlist \u2014 open redirect (CWE-601)."
+ },
+ {
+  "test_name": "BenchmarkTest00724",
+  "category": "redirect",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' selects bar = 'bob'."
+ },
+ {
+  "test_name": "BenchmarkTest00983",
+  "category": "redirect",
+  "vulnerable": false,
+  "reason": "bar is tainted from map keyB, but the handler urlparses it and returns early unless netloc is exactly google.com and scheme is https \u2014 an effective allowlist."
+ },
+ {
+  "test_name": "BenchmarkTest01157",
+  "category": "redirect",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value, which returns the constant \"bar\"; identity reflection preserves the constant."
+ },
+ {
+  "test_name": "BenchmarkTest01160",
+  "category": "redirect",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value (constant), bar reads the safe keyA value, and an allowlist guard is present."
+ },
+ {
+  "test_name": "BenchmarkTest00066",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "set_cookie(..., secure=False) \u2014 cookie sent over plaintext HTTP (CWE-614)."
+ },
+ {
+  "test_name": "BenchmarkTest00415",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "set_cookie(..., secure=True)."
+ },
+ {
+  "test_name": "BenchmarkTest00494",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "set_cookie(..., secure=False)."
+ },
+ {
+  "test_name": "BenchmarkTest00718",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "set_cookie(..., secure=False)."
+ },
+ {
+  "test_name": "BenchmarkTest00812",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "set_cookie(..., secure=True)."
+ },
+ {
+  "test_name": "BenchmarkTest00981",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "set_cookie(..., secure=False)."
+ },
+ {
+  "test_name": "BenchmarkTest01089",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "set_cookie(..., secure=True)."
+ },
+ {
+  "test_name": "BenchmarkTest00100",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "bar reads the safe keyA value, and the query is parameterized: cur.execute(sql, (bar,))."
+ },
+ {
+  "test_name": "BenchmarkTest00283",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "bar reads map keyB (tainted) and the query is an f-string executed with cur.execute(sql) \u2014 no bind parameters."
+ },
+ {
+  "test_name": "BenchmarkTest00287",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "guess = possible[0] = 'A' makes bar tainted, but the sink binds it: cur.execute(sql, (bar,)). Parameterization neutralizes the taint."
+ },
+ {
+  "test_name": "BenchmarkTest00454",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "base64 round-trip preserves taint and the query is an f-string run via cur.execute(sql)."
+ },
+ {
+  "test_name": "BenchmarkTest00755",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Tainted via base64 round-trip but bound as a parameter in cur.execute(sql, (bar,))."
+ },
+ {
+  "test_name": "BenchmarkTest01021",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "lst.pop(0) then lst[1] yields 'moresafe', and the query is parameterized."
+ },
+ {
+  "test_name": "BenchmarkTest01229",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value (constant) and the query is parameterized."
+ },
+ {
+  "test_name": "BenchmarkTest00072",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "'should' not in \"This should never happen\" is False, so bar = param; used as a flask.session key (CWE-501)."
+ },
+ {
+  "test_name": "BenchmarkTest00153",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "bar = param + '_SafeStuff' keeps the tainted prefix; written to flask.session['userid']."
+ },
+ {
+  "test_name": "BenchmarkTest00154",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "bar reads configparser keyA ('a_Value'); the tainted keyB is never read."
+ },
+ {
+  "test_name": "BenchmarkTest00421",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' selects bar = 'bob'."
+ },
+ {
+  "test_name": "BenchmarkTest00500",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' selects bar = 'bob'."
+ },
+ {
+  "test_name": "BenchmarkTest00888",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "superstring slice [len('74377'):-5] strips exactly the 5-char prefix and 5-char suffix, returning param verbatim into flask.session."
+ },
+ {
+  "test_name": "BenchmarkTest01161",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value (constant) and lst.pop(0) then lst[1] yields 'moresafe'."
+ },
+ {
+  "test_name": "BenchmarkTest00136",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "random.SystemRandom() is os.urandom-backed \u2014 a CSPRNG despite living in the random module."
+ },
+ {
+  "test_name": "BenchmarkTest00307",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "random.normalvariate() draws from the Mersenne Twister, not a CSPRNG, and the value becomes a session token (CWE-330)."
+ },
+ {
+  "test_name": "BenchmarkTest00566",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "secrets.randbelow \u2014 CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00698",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "secrets.token_urlsafe(32) \u2014 CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00706",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "random.SystemRandom().random() \u2014 CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00865",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "secrets.token_bytes(32) \u2014 CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest01219",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "random.SystemRandom().getrandbits(32) \u2014 CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00299",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "bar reads the safe keyA value, and the query additionally escapes quotes via replace(\"'\", \"&apos;\")."
+ },
+ {
+  "test_name": "BenchmarkTest00377",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "guess = possible[1] = 'B' selects 'bob'; quote-escaping also applied."
+ },
+ {
+  "test_name": "BenchmarkTest00543",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "'should' in bar is True so bar = param, and the query is built with ''.join([...bar...]) with no quote escaping before root.xpath."
+ },
+ {
+  "test_name": "BenchmarkTest00547",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "lst.pop(0) then lst[1] yields 'moresafe'; concatenated but constant."
+ },
+ {
+  "test_name": "BenchmarkTest01118",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value, which returns the constant \"bar\"."
+ },
+ {
+  "test_name": "BenchmarkTest01121",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "Ternary selects param, but the source is get_safe_value so param is the constant \"bar\"."
+ },
+ {
+  "test_name": "BenchmarkTest01184",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "lxml variable binding: query uses $name and root.xpath(query, name=param) passes it as a bound variable, not string-concatenated."
+ },
+ {
+  "test_name": "BenchmarkTest00185",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "bar reads configparser keyA ('a-Value'); constant interpolated into the response."
+ },
+ {
+  "test_name": "BenchmarkTest00280",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "map keyB read is overwritten by the safe keyA value before the response."
+ },
+ {
+  "test_name": "BenchmarkTest00367",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Ternary 7*18+106 = 232 > 200 true; bar is the constant."
+ },
+ {
+  "test_name": "BenchmarkTest01001",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "lst.pop(0) then lst[0] returns param, interpolated unescaped into the HTML response (escape_for_html is applied only on the error path)."
+ },
+ {
+  "test_name": "BenchmarkTest01020",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "html.escape(param) applied before the sink."
+ },
+ {
+  "test_name": "BenchmarkTest01103",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value, so map keyB holds the constant \"bar\"."
+ },
+ {
+  "test_name": "BenchmarkTest01104",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Source is get_safe_value; identity reflection preserves the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00292",
+  "category": "xxe",
+  "vulnerable": false,
+  "reason": "bar is tainted, but the SAX parser leaves external general entities disabled (no setFeature call), so external entity resolution never happens."
+ },
+ {
+  "test_name": "BenchmarkTest00459",
+  "category": "xxe",
+  "vulnerable": false,
+  "reason": "Default-safe parser and lst[1] yields 'moresafe' \u2014 neither condition for XXE is met."
+ },
+ {
+  "test_name": "BenchmarkTest00538",
+  "category": "xxe",
+  "vulnerable": false,
+  "reason": "Default-safe parser and bar reads the safe keyA value."
+ },
+ {
+  "test_name": "BenchmarkTest00540",
+  "category": "xxe",
+  "vulnerable": false,
+  "reason": "feature_external_ges is enabled, but guess='B' makes bar the constant 'bob'; no attacker-controlled XML reaches the parser."
+ },
+ {
+  "test_name": "BenchmarkTest00679",
+  "category": "xxe",
+  "vulnerable": false,
+  "reason": "External entities enabled, but lst[1] yields 'moresafe' \u2014 the parsed document is a constant."
+ },
+ {
+  "test_name": "BenchmarkTest00851",
+  "category": "xxe",
+  "vulnerable": false,
+  "reason": "External entities enabled, but guess='B' selects the constant 'bob'."
+ },
+ {
+  "test_name": "BenchmarkTest00931",
+  "category": "xxe",
+  "vulnerable": true,
+  "reason": "Both conditions hold: parser.setFeature(feature_external_ges, True) and guess = possible[0] = 'A' makes bar the attacker-controlled query value parsed as XML (CWE-611)."
+ }
+]

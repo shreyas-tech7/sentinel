@@ -1,0 +1,662 @@
+[
+ {
+  "test_name": "BenchmarkTest00090",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Dead-taint guard: (7*42)-86=208>200 always true, so bar takes the constant; param never reaches r.exec."
+ },
+ {
+  "test_name": "BenchmarkTest00306",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Guard is live (500/42=11 int-div, 11+196=207>200) so bar=param, but taint lands in r.exec's envp array; the command string itself is fixed. Env-var control, not command injection."
+ },
+ {
+  "test_name": "BenchmarkTest00308",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Dead-taint guard: 208>200 true, bar takes the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00408",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Dead-taint guard: 208>200 true, bar takes the constant; args built from safe bar."
+ },
+ {
+  "test_name": "BenchmarkTest00573",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "bar=param is tainted (attacker controls the parameter name), but it is passed as r.exec(cmd, envp) envp only; cmd is fixed."
+ },
+ {
+  "test_name": "BenchmarkTest00658",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Ternary guard (7*18)+106=232>200 true, bar takes the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00742",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Tainted value read back from map keyB, then immediately overwritten by the safe keyA value before the sink."
+ },
+ {
+  "test_name": "BenchmarkTest01779",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Inner-class dataflow: list [safe,param,moresafe], remove(0) then get(1) returns 'moresafe'; bar is safe at ProcessBuilder."
+ },
+ {
+  "test_name": "BenchmarkTest02059",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Tainted header survives the map round-trip (get keyB returns param) and reaches ProcessBuilder as sh -c \"echo \"+bar; shell metacharacters inject."
+ },
+ {
+  "test_name": "BenchmarkTest02067",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "switch on guess.charAt(1)='B' selects the constant branch; bar='bob' at the sink."
+ },
+ {
+  "test_name": "BenchmarkTest00055",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "Cipher.getInstance(\"DES/CBC/PKCS5Padding\",\"SunJCE\") hardcoded; DES is a 56-bit broken cipher (CWE-327)."
+ },
+ {
+  "test_name": "BenchmarkTest00056",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "Same hardcoded DES/CBC/PKCS5Padding. The list dataflow only affects the plaintext, not the algorithm choice."
+ },
+ {
+  "test_name": "BenchmarkTest00129",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "Algorithm comes from benchmark.properties cryptoAlg2 = AES/CCM/NoPadding (strong authenticated mode). The literal \"AES/ECB/PKCS5Padding\" in the getProperty default is a decoy that never applies because the key is present."
+ },
+ {
+  "test_name": "BenchmarkTest00130",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "cryptoAlg2 resolves to AES/CCM/NoPadding; the in-code ECB default is unused."
+ },
+ {
+  "test_name": "BenchmarkTest01021",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "cryptoAlg2 resolves to AES/CCM/NoPadding; ECB default is a decoy."
+ },
+ {
+  "test_name": "BenchmarkTest01324",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "Hardcoded AES/CCM/NoPadding \u00e2\u20ac\u201d strong authenticated mode."
+ },
+ {
+  "test_name": "BenchmarkTest01486",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "Hardcoded DES/CBC/PKCS5Padding; DES is broken regardless of the IV being SecureRandom-derived."
+ },
+ {
+  "test_name": "BenchmarkTest01742",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "cryptoAlg1 resolves to DES/ECB/PKCS5Padding \u00e2\u20ac\u201d weak cipher and ECB mode."
+ },
+ {
+  "test_name": "BenchmarkTest01901",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "cryptoAlg2 resolves to AES/CCM/NoPadding; ECB default is a decoy."
+ },
+ {
+  "test_name": "BenchmarkTest02374",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "Hardcoded DES/CBC/PKCS5Padding."
+ },
+ {
+  "test_name": "BenchmarkTest00070",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "MessageDigest.getInstance(\"SHA1\",\"SUN\") \u00e2\u20ac\u201d SHA-1 is a broken hash (CWE-328). Hash weakness is independent of the taint path."
+ },
+ {
+  "test_name": "BenchmarkTest00538",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "MessageDigest.getInstance(\"SHA-256\") \u00e2\u20ac\u201d strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest00633",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "MessageDigest.getInstance(\"sha-384\") on both provider branches \u00e2\u20ac\u201d strong hash."
+ },
+ {
+  "test_name": "BenchmarkTest00637",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "MessageDigest.getInstance(\"MD5\") hardcoded \u00e2\u20ac\u201d broken hash."
+ },
+ {
+  "test_name": "BenchmarkTest01250",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "hashAlg2 resolves to SHA-256 in benchmark.properties; the \"SHA5\" getProperty default is a decoy and never applies."
+ },
+ {
+  "test_name": "BenchmarkTest01577",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "MessageDigest.getInstance(\"MD5\") hardcoded."
+ },
+ {
+  "test_name": "BenchmarkTest01654",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "hashAlg1 resolves to MD5. The in-source default reads \"SHA512\", so matching the literal would produce a false negative here \u00e2\u20ac\u201d the properties file is the live value."
+ },
+ {
+  "test_name": "BenchmarkTest01766",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "hashAlg1 resolves to MD5; the \"SHA512\" default literal is a decoy."
+ },
+ {
+  "test_name": "BenchmarkTest01996",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "hashAlg1 resolves to MD5; \"SHA512\" default is a decoy."
+ },
+ {
+  "test_name": "BenchmarkTest02042",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "MessageDigest.getInstance(\"SHA1\",\"SUN\") \u00e2\u20ac\u201d broken hash; the Base64 round-trip on the input is a no-op."
+ },
+ {
+  "test_name": "BenchmarkTest00012",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "Tainted header is concatenated straight into the LDAP filter \"(&(objectclass=person))(|(uid=\"+param+...\" and passed to idc.search; no escaping."
+ },
+ {
+  "test_name": "BenchmarkTest00701",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "The long taint chain (StringBuilder/map/substring/B64/split) is computed then discarded: bar = thing.doSomething(g85232) where g85232 is the constant \"barbarians_at_the_gate\". Nothing tainted reaches the filter."
+ },
+ {
+  "test_name": "BenchmarkTest00948",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Map keyB read is overwritten by the safe keyA value before return; filter gets a constant."
+ },
+ {
+  "test_name": "BenchmarkTest01024",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Dead-taint guard (7*42)-86=208>200 always true; bar is the constant."
+ },
+ {
+  "test_name": "BenchmarkTest01491",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Same discarded-chain decoy as 00701: bar comes from the constant g55812, not from param."
+ },
+ {
+  "test_name": "BenchmarkTest01501",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "List is [safe,param,moresafe]; remove(0) drops \"safe\", then get(0) returns param. Tainted value reaches the LDAP filter."
+ },
+ {
+  "test_name": "BenchmarkTest01755",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "bar = map.get(\"keyB-69635\") returns param and is not overwritten; reaches the filter unescaped."
+ },
+ {
+  "test_name": "BenchmarkTest01832",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "Guard (500/42)+196 = 11+196 = 207 > 200 is true, so bar = param; tainted value reaches the filter."
+ },
+ {
+  "test_name": "BenchmarkTest02196",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "switch on guess.charAt(2)='C' falls to the case that assigns bar = param; tainted."
+ },
+ {
+  "test_name": "BenchmarkTest02305",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "List remove(0) then get(0) returns param; tainted value reaches the filter."
+ },
+ {
+  "test_name": "BenchmarkTest00459",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "bar is a Base64 encode/decode round-trip of param \u00e2\u20ac\u201d a no-op that preserves taint \u00e2\u20ac\u201d then concatenated into TESTFILES_DIR + bar and opened via FileOutputStream."
+ },
+ {
+  "test_name": "BenchmarkTest00525",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "List remove(0) then get(0) returns param; tainted value becomes the child path in new File(TESTFILES_DIR, bar)."
+ },
+ {
+  "test_name": "BenchmarkTest00528",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "bar = map.get(\"keyB-6751\") returns param with no overwrite; flows into the URI path and new File(fileURI)."
+ },
+ {
+  "test_name": "BenchmarkTest00865",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "List remove(0) then get(0) returns param; concatenated into the file URI path."
+ },
+ {
+  "test_name": "BenchmarkTest01115",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Discarded-chain decoy: bar = thing.doSomething(g43762) where g43762 is the constant \"barbarians_at_the_gate\"; the tainted chain is dead."
+ },
+ {
+  "test_name": "BenchmarkTest01493",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Map keyB read is immediately overwritten by the safe keyA value; bar is constant at the sink."
+ },
+ {
+  "test_name": "BenchmarkTest01835",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "Guard (500/42)+196 = 207 > 200 is true, so bar = param; reaches new File(TESTFILES_DIR, bar)."
+ },
+ {
+  "test_name": "BenchmarkTest01837",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Ternary (7*18)+106 = 232 > 200 is true, so bar takes the constant."
+ },
+ {
+  "test_name": "BenchmarkTest02027",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "Ternary (7*42)-106 = 188, which is NOT > 200, so the false branch assigns bar = param. Differs from the num=86 variant where the same expression is 208 and the constant wins."
+ },
+ {
+  "test_name": "BenchmarkTest02201",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "switch on guess.charAt(1)='B' selects bar = \"bob\"; constant at the sink."
+ },
+ {
+  "test_name": "BenchmarkTest00170",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "cookie.setSecure(false) before addCookie \u00e2\u20ac\u201d cookie transmitted over plaintext HTTP (CWE-614)."
+ },
+ {
+  "test_name": "BenchmarkTest00242",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "cookie.setSecure(true) \u00e2\u20ac\u201d secure flag set."
+ },
+ {
+  "test_name": "BenchmarkTest01062",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "cookie.setSecure(true)."
+ },
+ {
+  "test_name": "BenchmarkTest01280",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "cookie.setSecure(false)."
+ },
+ {
+  "test_name": "BenchmarkTest01359",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "cookie.setSecure(true)."
+ },
+ {
+  "test_name": "BenchmarkTest01436",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "cookie.setSecure(true)."
+ },
+ {
+  "test_name": "BenchmarkTest01789",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "cookie.setSecure(false)."
+ },
+ {
+  "test_name": "BenchmarkTest01861",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "cookie.setSecure(false)."
+ },
+ {
+  "test_name": "BenchmarkTest01862",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "cookie.setSecure(true)."
+ },
+ {
+  "test_name": "BenchmarkTest02607",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "cookie.setSecure(true)."
+ },
+ {
+  "test_name": "BenchmarkTest00598",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Base64 encode/decode round-trip preserves taint; bar is concatenated into \"...PASSWORD='\"+bar+\"'\" and run via JDBCtemplate.queryForMap."
+ },
+ {
+  "test_name": "BenchmarkTest00926",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "List remove(0) then get(1) returns \"moresafe\"; the concatenated value is a constant even though the query is built by concatenation."
+ },
+ {
+  "test_name": "BenchmarkTest01086",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Ternary (7*18)+106 = 232 > 200 true, so bar takes the constant."
+ },
+ {
+  "test_name": "BenchmarkTest01627",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "bar = param passes through unchanged into the concatenated query, executed via statement.execute(sql, String[])."
+ },
+ {
+  "test_name": "BenchmarkTest01720",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Ternary (7*42)-106 = 188, not > 200, so bar = param; concatenated into the query for JDBCtemplate.execute."
+ },
+ {
+  "test_name": "BenchmarkTest01810",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Same 188-not->200 ternary yields bar = param; concatenated into queryForMap."
+ },
+ {
+  "test_name": "BenchmarkTest01815",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "bar = map.get(\"keyB-72704\") returns param with no safe overwrite; concatenated then addBatch(sql)."
+ },
+ {
+  "test_name": "BenchmarkTest02364",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Ternary yields bar = param; concatenated into statement.execute(sql)."
+ },
+ {
+  "test_name": "BenchmarkTest02531",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "prepareStatement is used, but only USERNAME is a bind parameter; PASSWORD is built by concatenating the tainted bar into the SQL string before prepare. Parameterizing one field does not protect the other."
+ },
+ {
+  "test_name": "BenchmarkTest02543",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Guard (500/42)+196 = 207 > 200 true, so bar = param; concatenated into statement.execute(sql, RETURN_GENERATED_KEYS)."
+ },
+ {
+  "test_name": "BenchmarkTest00189",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "Discarded-chain decoy: bar = thing.doSomething(g14330) with g14330 the constant \"barbarians_at_the_gate\"; nothing tainted reaches setAttribute."
+ },
+ {
+  "test_name": "BenchmarkTest00252",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "List remove(0) then get(1) returns \"moresafe\"; the session key is a constant."
+ },
+ {
+  "test_name": "BenchmarkTest00321",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "bar = ESAPI.encodeForHTML(param) is the wrong sanitizer for this sink: HTML-encoding does not make attacker-controlled data trusted, and it still lands in the session via putValue. Trust-boundary violation stands (CWE-501)."
+ },
+ {
+  "test_name": "BenchmarkTest00754",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "bar = map.get(\"keyB-6425\") returns param with no safe overwrite; written into the session."
+ },
+ {
+  "test_name": "BenchmarkTest00835",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "List remove(0) then get(1) returns \"moresafe\"; constant reaches setAttribute."
+ },
+ {
+  "test_name": "BenchmarkTest01711",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "Guard (500/42)+196 = 207 > 200 true, so bar = param; written into the session."
+ },
+ {
+  "test_name": "BenchmarkTest01876",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "bar = param, then a substring that trims one character \u00e2\u20ac\u201d taint preserved into setAttribute."
+ },
+ {
+  "test_name": "BenchmarkTest02016",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "thing.doSomething(param) is an identity function (Thing1/Thing2 both return their input), so the tainted param reaches putValue."
+ },
+ {
+  "test_name": "BenchmarkTest02352",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "Identity reflection call passes param through; tainted value becomes the session attribute NAME via setAttribute(bar, ...)."
+ },
+ {
+  "test_name": "BenchmarkTest02446",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "Guard (500/42)+196 = 207 > 200 true, so bar = param; used as the session key in putValue."
+ },
+ {
+  "test_name": "BenchmarkTest00244",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "Declared java.util.Random but assigned SecureRandom.getInstance(\"SHA1PRNG\"); the runtime object is a CSPRNG. Declared-type matching would false-positive here."
+ },
+ {
+  "test_name": "BenchmarkTest00416",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "SecureRandom.getInstance(\"SHA1PRNG\").nextBytes \u00e2\u20ac\u201d CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00749",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "java.util.Random-typed variable holding a SecureRandom instance; nextDouble comes from the CSPRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00987",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "SecureRandom.getInstance(\"SHA1PRNG\").nextFloat()."
+ },
+ {
+  "test_name": "BenchmarkTest01059",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "new java.util.Random().nextDouble() \u00e2\u20ac\u201d non-cryptographic PRNG used for a security-relevant value (CWE-330)."
+ },
+ {
+  "test_name": "BenchmarkTest01070",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "SecureRandom instance behind a java.util.Random-typed variable."
+ },
+ {
+  "test_name": "BenchmarkTest01075",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "SecureRandom.getInstance(\"SHA1PRNG\").nextGaussian()."
+ },
+ {
+  "test_name": "BenchmarkTest01277",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "new java.util.Random().nextLong() \u00e2\u20ac\u201d weak PRNG."
+ },
+ {
+  "test_name": "BenchmarkTest01801",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "SecureRandom.getInstance(\"SHA1PRNG\").nextInt(99)."
+ },
+ {
+  "test_name": "BenchmarkTest02417",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "new java.util.Random().nextDouble() \u00e2\u20ac\u201d weak PRNG."
+ },
+ {
+  "test_name": "BenchmarkTest00442",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "Ternary (7*42)-106 = 188, not > 200, so bar = param; concatenated into the XPath expression and evaluated."
+ },
+ {
+  "test_name": "BenchmarkTest00520",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "Ternary (7*18)+106 = 232 > 200 true; bar takes the constant."
+ },
+ {
+  "test_name": "BenchmarkTest00683",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "Ternary yields 232 > 200 true; constant reaches the expression."
+ },
+ {
+  "test_name": "BenchmarkTest01013",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "Inner-class ternary yields 232 > 200 true; constant. (doGet inspected too \u00e2\u20ac\u201d it only dispatches to the HTML page.)"
+ },
+ {
+  "test_name": "BenchmarkTest01223",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "switch on guess.charAt(2)='C' assigns bar = param; tainted value concatenated into the XPath expression."
+ },
+ {
+  "test_name": "BenchmarkTest01224",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "List remove(0) then get(0) returns param; reaches xp.evaluate unescaped."
+ },
+ {
+  "test_name": "BenchmarkTest01225",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "Ternary yields 232 > 200 true; constant."
+ },
+ {
+  "test_name": "BenchmarkTest01478",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "Ternary (7*42)-106 = 188, not > 200, so bar = param; tainted into xp.compile(expression)."
+ },
+ {
+  "test_name": "BenchmarkTest01734",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "Same 188-not->200 ternary yields bar = param; tainted XPath."
+ },
+ {
+  "test_name": "BenchmarkTest02370",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "List remove(0) then get(1) returns \"moresafe\"; constant reaches the expression."
+ },
+ {
+  "test_name": "BenchmarkTest00718",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "bar = StringEscapeUtils.escapeHtml(param) before being placed in the printf argument array \u00e2\u20ac\u201d correct sanitizer for an HTML sink."
+ },
+ {
+  "test_name": "BenchmarkTest00811",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "switch on guess.charAt(2)='C' assigns bar = param; written unescaped via getWriter().println(bar.toCharArray())."
+ },
+ {
+  "test_name": "BenchmarkTest01054",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "HtmlUtils.htmlEscape(param) applied before the sink."
+ },
+ {
+  "test_name": "BenchmarkTest01772",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "new StringBuilder(param).append(\"_SafeStuff\") keeps the tainted prefix; appending a constant does not sanitize. Written unescaped via write(bar.toCharArray())."
+ },
+ {
+  "test_name": "BenchmarkTest02130",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "Same StringBuilder(param)+append decoy; the tainted string reaches getWriter().printf as a %s argument."
+ },
+ {
+  "test_name": "BenchmarkTest02236",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Dead-taint guard (7*42)-86 = 208 > 200 true; bar is the constant."
+ },
+ {
+  "test_name": "BenchmarkTest02238",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Discarded-chain decoy: bar comes from the constant g16227, not from the tainted chain."
+ },
+ {
+  "test_name": "BenchmarkTest02480",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "Ternary (7*42)-106 = 188, not > 200, so bar = param; printed unescaped."
+ },
+ {
+  "test_name": "BenchmarkTest02484",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Map keyB read overwritten by the safe keyA value before the sink."
+ },
+ {
+  "test_name": "BenchmarkTest02599",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Dead-taint guard 208 > 200 true; bar is the constant."
+ }
+]

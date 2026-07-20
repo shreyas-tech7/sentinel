@@ -1,0 +1,662 @@
+[
+ {
+  "test_name": "BenchmarkTest00090",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00306",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00308",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00408",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00573",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00658",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00742",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01779",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: command-injection-process-builder"
+ },
+ {
+  "test_name": "BenchmarkTest02059",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: command-injection-process-builder, tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02067",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-cmd-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00055",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: des-is-deprecated, desede-is-deprecated"
+ },
+ {
+  "test_name": "BenchmarkTest00056",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: des-is-deprecated, desede-is-deprecated"
+ },
+ {
+  "test_name": "BenchmarkTest00129",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00130",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01021",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01324",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional"
+ },
+ {
+  "test_name": "BenchmarkTest01486",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: des-is-deprecated, desede-is-deprecated"
+ },
+ {
+  "test_name": "BenchmarkTest01742",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: des-is-deprecated, desede-is-deprecated"
+ },
+ {
+  "test_name": "BenchmarkTest01901",
+  "category": "crypto",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest02374",
+  "category": "crypto",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: des-is-deprecated, desede-is-deprecated"
+ },
+ {
+  "test_name": "BenchmarkTest00070",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: use-of-sha1"
+ },
+ {
+  "test_name": "BenchmarkTest00538",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00633",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00637",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, use-of-md5"
+ },
+ {
+  "test_name": "BenchmarkTest01250",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01577",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: use-of-md5"
+ },
+ {
+  "test_name": "BenchmarkTest01654",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01766",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01996",
+  "category": "hash",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest02042",
+  "category": "hash",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: use-of-sha1"
+ },
+ {
+  "test_name": "BenchmarkTest00012",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00701",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00948",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01024",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01491",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01501",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01755",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01832",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02196",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02305",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-ldapi-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00459",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest00525",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00528",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00865",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01115",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest01493",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest01835",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest01837",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest02027",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest02201",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: httpservlet-path-traversal"
+ },
+ {
+  "test_name": "BenchmarkTest00170",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: cookie-missing-secure-flag"
+ },
+ {
+  "test_name": "BenchmarkTest00242",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01062",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01280",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: cookie-missing-secure-flag, hardcoded-conditional"
+ },
+ {
+  "test_name": "BenchmarkTest01359",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01436",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01789",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: cookie-missing-secure-flag"
+ },
+ {
+  "test_name": "BenchmarkTest01861",
+  "category": "securecookie",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: cookie-missing-secure-flag, hardcoded-conditional"
+ },
+ {
+  "test_name": "BenchmarkTest01862",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest02607",
+  "category": "securecookie",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00598",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00926",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01086",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01627",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: jdbc-sqli, tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01720",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01810",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01815",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: jdbc-sqli"
+ },
+ {
+  "test_name": "BenchmarkTest02364",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: jdbc-sqli, tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02531",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02543",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: jdbc-sqli, tainted-sql-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00189",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00252",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00321",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00754",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00835",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01711",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-session-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01876",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-session-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02016",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-session-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02352",
+  "category": "trustbound",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest02446",
+  "category": "trustbound",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00244",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00416",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00749",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00987",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01059",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: weak-random"
+ },
+ {
+  "test_name": "BenchmarkTest01070",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01075",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01277",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: weak-random"
+ },
+ {
+  "test_name": "BenchmarkTest01801",
+  "category": "weakrand",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest02417",
+  "category": "weakrand",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: weak-random"
+ },
+ {
+  "test_name": "BenchmarkTest00442",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00520",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00683",
+  "category": "xpathi",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest01013",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01223",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01224",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01225",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01478",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest01734",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest02370",
+  "category": "xpathi",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer, tainted-xpath-from-http-request"
+ },
+ {
+  "test_name": "BenchmarkTest00718",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest00811",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest01054",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest01772",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "no semgrep finding in this file"
+ },
+ {
+  "test_name": "BenchmarkTest02130",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest02236",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest02238",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest02480",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest02484",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: no-direct-response-writer"
+ },
+ {
+  "test_name": "BenchmarkTest02599",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "semgrep rules fired: hardcoded-conditional, no-direct-response-writer"
+ }
+]

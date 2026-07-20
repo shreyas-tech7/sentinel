@@ -32,6 +32,28 @@ import sys
 from pathlib import Path
 
 
+def find_expected_csv(benchmark_root: Path, explicit: Path | None = None) -> Path:
+    """Locate the expected-results CSV inside a Benchmark checkout.
+
+    The Java and Python Benchmark suites are separate repositories that share a
+    CSV schema but not a filename (expectedresults-1.2.csv vs
+    expectedresults-0.1.csv). An explicit path always wins; otherwise exactly one
+    expectedresults-*.csv must be present, so a checkout carrying two versions is
+    an error rather than a silent coin flip.
+    """
+    if explicit is not None:
+        if not explicit.is_file():
+            raise FileNotFoundError(f"{explicit} not found")
+        return explicit
+    matches = sorted(benchmark_root.glob("expectedresults-*.csv"))
+    if not matches:
+        raise FileNotFoundError(f"no expectedresults-*.csv under {benchmark_root}")
+    if len(matches) > 1:
+        names = ", ".join(p.name for p in matches)
+        raise ValueError(f"ambiguous ground truth under {benchmark_root}: {names}; pass --expected-csv")
+    return matches[0]
+
+
 def load_truth(expected_csv: Path) -> dict[str, tuple[str, bool]]:
     """Return {test_name: (category, is_real_vulnerability)}."""
     truth: dict[str, tuple[str, bool]] = {}
@@ -133,9 +155,15 @@ def main() -> int:
     parser.add_argument("--verdicts", required=True, type=Path)
     parser.add_argument("--label", default="overall")
     parser.add_argument("--markdown", action="store_true")
+    parser.add_argument(
+        "--expected-csv",
+        type=Path,
+        default=None,
+        help="ground-truth CSV; auto-discovered inside --benchmark-root when omitted",
+    )
     args = parser.parse_args()
 
-    truth = load_truth(args.benchmark_root / "expectedresults-1.2.csv")
+    truth = load_truth(find_expected_csv(args.benchmark_root, args.expected_csv))
     verdicts = load_verdicts(args.verdicts)
     counts = score(truth, verdicts)
 

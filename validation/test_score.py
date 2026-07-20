@@ -27,6 +27,41 @@ class LoadTruthTests(unittest.TestCase):
         self.assertEqual(truth["BenchmarkTest00002"], ("sqli", False))
 
 
+class FindExpectedCsvTests(unittest.TestCase):
+    def test_discovers_java_suite_filename(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "expectedresults-1.2.csv").write_text("# header\n")
+            self.assertEqual(score.find_expected_csv(root).name, "expectedresults-1.2.csv")
+
+    def test_discovers_python_suite_filename(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "expectedresults-0.1.csv").write_text("# header\n")
+            self.assertEqual(score.find_expected_csv(root).name, "expectedresults-0.1.csv")
+
+    def test_explicit_path_wins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "expectedresults-1.2.csv").write_text("# header\n")
+            chosen = root / "custom.csv"
+            chosen.write_text("# header\n")
+            self.assertEqual(score.find_expected_csv(root, chosen), chosen)
+
+    def test_missing_csv_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(FileNotFoundError):
+                score.find_expected_csv(Path(tmp))
+
+    def test_ambiguous_csv_raises(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "expectedresults-1.2.csv").write_text("# header\n")
+            (root / "expectedresults-0.1.csv").write_text("# header\n")
+            with self.assertRaises(ValueError):
+                score.find_expected_csv(root)
+
+
 class LoadVerdictsTests(unittest.TestCase):
     def test_rejects_duplicates(self):
         with tempfile.TemporaryDirectory() as tmp:

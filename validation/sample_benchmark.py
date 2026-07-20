@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Draw a blind, stratified, reproducible sample of OWASP Benchmark test cases.
 
-Reads only the test-case name and category columns of expectedresults-1.2.csv —
+Reads only the test-case name and category columns of the expected-results CSV —
 never the ground-truth flag — so the auditor who analyzes the sampled files is
 blind to the expected answer. Scoring happens afterwards, in score.py, which is
 the only place the truth column is read.
 
     python validation/sample_benchmark.py --benchmark-root ../BenchmarkJava \
         --per-category 6 --seed 42 --out validation/data/benchmark-sample.csv
+
+Works against either OWASP Benchmark suite; they are separate repositories with
+the same CSV schema but different filenames (BenchmarkJava ships
+expectedresults-1.2.csv, BenchmarkPython ships expectedresults-0.1.csv). The
+file is auto-discovered, or named explicitly with --expected-csv.
 
 Standard library only.
 """
@@ -19,6 +24,8 @@ import csv
 import random
 import sys
 from pathlib import Path
+
+from score import find_expected_csv
 
 
 def load_cases(expected_csv: Path) -> dict[str, list[str]]:
@@ -51,11 +58,18 @@ def main() -> int:
     parser.add_argument("--per-category", type=int, default=6)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument(
+        "--expected-csv",
+        type=Path,
+        default=None,
+        help="ground-truth CSV; auto-discovered inside --benchmark-root when omitted",
+    )
     args = parser.parse_args()
 
-    expected_csv = args.benchmark_root / "expectedresults-1.2.csv"
-    if not expected_csv.is_file():
-        print(f"error: {expected_csv} not found", file=sys.stderr)
+    try:
+        expected_csv = find_expected_csv(args.benchmark_root, args.expected_csv)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 1
 
     sample = draw(load_cases(expected_csv), args.per_category, args.seed)
