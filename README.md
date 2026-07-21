@@ -4,7 +4,7 @@
 software — any language, any framework, any artifact type.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-8.0.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-9.0.0-informational.svg)](CHANGELOG.md)
 [![Use: defensive only](https://img.shields.io/badge/use-defensive%20only-important.svg)](SECURITY.md)
 
 SENTINEL is a persona and a fixed six-phase workflow that audits source code the way a careful staff
@@ -69,6 +69,28 @@ accuracy claim**: its categories were chosen precisely because the errors were t
 comparable to the 0.9358 above, which remains the baseline. What it establishes is narrower and
 checkable — on 11 cases carrying the three trap shapes, none of the errors recurred, and the four
 genuine wrapper-sourced cases were not over-corrected into false negatives.
+
+**v9.0** finally drew the broad, unconcentrated resample the previous two rounds deferred — 204 fresh
+cases (110 Java + 94 Python), excluding every case scored in any prior round:
+
+| Broad blind resample (2026-07-21) | N | Precision | Recall | F1 |
+|---|---|---|---|---|
+| SENTINEL — Java | 110 | 1.0000 | 1.0000 | 1.0000 |
+| SENTINEL — Python | 94 | 0.9250 | 1.0000 | 0.9610 |
+| **Combined** | **204** | 0.9691 | 1.0000 | **0.9843** |
+
+**The 208-case 0.9358 above is still the figure to quote, and the Java 1.0000 here should not be.**
+A perfect score on 110 cases measures how completely the corpus was learned, not how good the method
+is. Scoring this sample began by reading the Benchmark's helper classes, which yields a vocabulary of
+roughly a dozen transform idioms — after which most of the suite is pattern recognition rather than
+analysis. The Benchmark is synthetic and template-built, so it rewards exactly that; production code
+does not reuse twelve idioms across thousands of files. Treat 0.9843 as the ceiling under favourable
+conditions and 0.9358 as the honest cold estimate.
+
+What the run does establish, cleanly: **zero false negatives across 204 cases**, and all three false
+positives sharing a single root cause — `request.path.split("/")[1]` read as attacker-controlled when
+every one of those handlers is bound to a static Flask route, making that segment the constant
+`'benchmark'`. [Full write-up, including two near-misses caught mid-audit.](validation/owasp-benchmark-results.md)
 
 The [Juice Shop passes](validation/juice-shop-results.md) score findings against the app's own
 documented challenges. Both are kept:
@@ -329,6 +351,13 @@ sentinel/
   deliberately concentrated in the categories where the v6.0 errors occurred, and the traps were known
   going in — it measures whether encoded guidance is applied on unseen code, not whether a cold
   auditor would rediscover them. The 208-case F1 of 0.9358 remains the figure to quote.
+- **The v9.0 broad resample carries a learning-effect confound, and says so.** Its 204 fresh cases are
+  broad and unconcentrated — the sampling weakness of the v7.0 retest is genuinely fixed — but scoring
+  began by reading the Benchmark's helper classes and deriving its ~12 recurring transform idioms.
+  After that, a synthetic template-built corpus is largely pattern recognition. That is why the Java
+  1.0000 is reported as "the corpus was learned," not as a capability claim, and why 0.9358 is still
+  the number quoted above. The durable results from that run are the zero false negatives and the
+  single shared root cause behind all three false positives.
 - **Regression audit needs history.** Phase 4 is only as sharp as the commit history available; without
   it, the phase runs as a static pass and says so.
 

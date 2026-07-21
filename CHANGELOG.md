@@ -8,6 +8,89 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.0.0] — 2026-07-21
+
+**Making the harness fail loudly, then measuring what nobody had measured.** Three separate
+silent-failure near-misses surfaced across v7.0 and v8.0 — a guessed path that returned zero, a
+CRLF-mangled file list that scanned nothing, and 28 files that failed to parse and would have counted
+as clean negatives. Every one was caught because a human thought a number looked wrong; nothing in the
+harness objected. Each produced a clean exit code and a plausible results table. This release makes
+that shape fatal, then uses the hardened harness for the broad resample two previous rounds deferred.
+
+No phase, rubric, catalog class, or check changed. The six phases (0–5), STRIDE core, severity and
+confidence rubrics, evidence standard, prose report template, findings schema, standards-currency
+check, all 45 `SENT-*` classes, the four frozen `KNOWN_INCOMPLETE` example findings, and the
+`security-audit` skill name are untouched.
+
+### Added
+- **Silent-failure guards across the scoring harness** (`validation/harness_guard.py`, wired into
+  `score.py`, `score_juiceshop.py`, and `bandit_to_verdicts.py`; 13 new tests). A scorer now asserts
+  it processed the case set it was handed, not merely that it exited without an exception.
+  - `score.py` gains `--sample`: the verdict set must match the drawn case list exactly, by name.
+    A set comparison rather than a count, because a substitution — one case dropped, another
+    duplicated — leaves the total intact.
+  - `score_juiceshop.py` resolves every `scope_files` entry against the target before scoring, so a
+    path that is not on disk is an error rather than a silent sweep of missed challenges. This is the
+    v7.0 failure mode.
+  - `bandit_to_verdicts.py` asserts one verdict per sampled case and rejects case names carrying
+    stray whitespace, the signature of the v8.0 CRLF incident.
+  - Failures raise. A warning printed above a results table is exactly what the last three incidents
+    would have produced, and exactly what gets read past on the way to the F1 column.
+  - **Both known failure modes are reconstructed as tests against the real scripts.** Writing them
+    corrected an assumption: a stray CR inside a CSV destroys row structure rather than surviving on
+    the name, so the set comparison catches that shape while the whitespace guard catches the
+    newline-delimited file-list shape. Both guards are needed; neither is load-bearing alone. The
+    tests assert what was observed, not what was predicted.
+  - Verified non-regressive against real historical data: the guard reproduces Bandit's F1 of 0.4308
+    on the v8.0 corpus unchanged.
+- **A broad, unconcentrated blind resample — 204 fresh cases** (`validation/owasp-benchmark-results.md`,
+  new dated section; sample and verdict files under `validation/data/`). Everything scored since v6.0
+  was either superseded-but-broad or deliberately concentrated on known traps; neither could show
+  whether the v7.0 catalog fix moved the *general* F1, because a concentrated retest is selected on the
+  thing being measured. Stratified draw, seed 909, excluding all 326 previously scored cases.
+  - **Combined F1 0.9843** over 204 cases (94 TP, 3 FP, 0 FN, 107 TN). Java 110: 1.0000.
+    Python 94: 0.9610.
+  - **The Java 1.0000 is reported with the caveat that it is not a cold number and must not be quoted
+    as one.** Scoring began by reading the Benchmark's helper classes, which yields a vocabulary of
+    roughly a dozen recurring transform idioms, after which a synthetic template-built corpus is
+    largely pattern recognition rather than analysis. That is a learning effect on the corpus, not a
+    capability gain. v6.0's 0.9358 remains the figure the README quotes.
+  - **All three false positives share one root cause**: `request.path.split("/")[1]` read as a taint
+    source when every such handler is bound to a static Flask route literal, making that segment the
+    constant `'benchmark'`. A framework request attribute is not automatically tainted. Zero false
+    negatives across the whole run.
+  - Python drew 94 rather than 98 because its `sqli` category is genuinely exhausted — 16 cases exist
+    and 13 were consumed by earlier samples. Recorded rather than quietly padded.
+- **Vendored Benchmark ground truth** (`validation/data/benchmark-truth-{java,python}.csv`, 2 new
+  tests). The three `BenchmarkConformanceTests` reached their ground truth only through a sibling
+  Benchmark clone, which CI does not have, so they raised `SkipTest` — and a skip reads as a pass while
+  117 serialized records go unchecked. 272 vendored rows against 3,972 in the full clones: a fixture,
+  not a checkout. Verified by simulation in a repo copy with no siblings — 18 tests run with zero
+  skips, and deleting the fixture drops it to 15 with one silent class-level skip.
+- **An encoding checker** (`scripts/check_encoding.py`, 10 new tests, sixth CI check). Flags mojibake
+  signatures, `U+FFFD`, undecodable bytes, and a byte-order mark anywhere but position 0.
+  - The negative controls earned their keep immediately: the first pattern matched only the cp1252
+    round trip (where byte `0x80` becomes a Euro sign) and silently passed every latin-1 one, where
+    the same byte stays a raw C1 control — the more common of the two. Running it against real damaged
+    bytes found that; reading the regex did not.
+  - It reads file bytes, never terminal output. A Windows console renders a *correctly* encoded em
+    dash as a replacement glyph, and this repo's own scripts print one, so terminal appearance is not
+    evidence in either direction.
+  - The checker and its tests are pure ASCII and build every non-ASCII character with `chr()`. Spelled
+    as literals, both files contained exactly the sequences the check rejects and flagged themselves;
+    a test now pins the property shut.
+
+### Changed
+- `CONTRIBUTING.md` documents the platform rule the last two incidents point at: **write files with a
+  direct file-write, never a shell heredoc or a PowerShell here-string**, since those round-trip
+  through cp1252 while this repo's content is UTF-8. Its check list is updated in the same commit —
+  CI runs six checks and the list says six, the claim whose drift was the bug v8.0 fixed.
+- `README.md` carries the v9.0 resample table alongside the 208-case baseline, with the learning-effect
+  caveat stated where the numbers are, not in a footnote.
+
+### Validation suite
+43 → 68 tests. Six CI checks, all green. 102 tracked text files scanned clean for encoding damage.
+
 ## [8.0.0] — 2026-07-20
 
 **Making the parts nobody validated trustworthy.** Four consecutive releases made the validation
