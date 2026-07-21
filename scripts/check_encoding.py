@@ -28,6 +28,12 @@ a Windows console renders a valid em dash as a replacement glyph, and mistaking
 that console artifact for file damage sends a reader chasing a bug that is not
 there.
 
+**This file is deliberately pure ASCII**, and its character classes are built
+with `chr()` rather than written as literals. The first version spelled them out,
+which made the checker flag its own source: the patterns it searches for are, by
+construction, exactly the byte sequences it must reject. Building them numerically
+removes the paradox and makes the file immune to the corruption it detects.
+
 Standard library only. Exits non-zero when anything is flagged.
 """
 
@@ -49,34 +55,34 @@ TEXT_NAMES = {".gitattributes", ".gitignore"}
 
 # The residue of a UTF-8 -> single-byte-charset -> UTF-8 round trip.
 #
-# Two variants exist and both must be caught -- an earlier version of this check
-# caught only one. A UTF-8 em dash is the bytes e2 80 94. Decoded as **cp1252**
-# those become U+00E2, U+20AC (EURO SIGN), U+201D; decoded as **latin-1** the same
-# bytes become U+00E2 and the raw C1 controls U+0080, U+0094. A pattern written
-# around the Euro-sign form silently passes every latin-1 round trip. That gap was
-# found by the negative-control test in test_check_encoding.py, not by reading the
-# regex -- which is the whole argument for having the negative control.
+# Two variants exist and both must be caught -- an earlier version caught only
+# one. A UTF-8 em dash is the bytes e2 80 94. Decoded as **cp1252** those become
+# U+00E2, U+20AC (EURO SIGN), U+201D; decoded as **latin-1** the same bytes become
+# U+00E2 and the raw C1 controls U+0080, U+0094. A pattern built around the
+# Euro-sign form silently passes every latin-1 round trip -- and latin-1 is the
+# more common one. That gap was found by the negative-control tests in
+# validation/test_check_encoding.py, not by reading the regex.
 #
 # The reliable signature is a *pair*: a character in the range UTF-8 lead bytes
 # occupy when misread as Latin-1, immediately followed by something only a
 # continuation byte could have produced. Requiring the pair is what keeps
 # legitimate accented text from tripping the check -- in real prose an accented
-# letter is followed by an ordinary letter or a space, never by a C1 control.
-#
-# Written with \u escapes so this file stays pure ASCII. A checker for mojibake
-# that is itself full of non-ASCII literals is one bad round trip away from
-# silently breaking its own patterns.
-_LEAD = "Â-ô"  # lead bytes c2..f4, seen as Latin-1
-_TAIL = "-¿"  # continuation bytes 80..bf, seen as Latin-1
-_CP1252 = (  # ...and the glyphs cp1252 maps 80..9f onto
-    "€‚ƒ„…†‡ˆ‰Š"
-    "‹ŒŽ‘’“”•–—"
-    "˜™š›œžŸ"
+# letter is followed by a letter or a space, never by a C1 control or a stray
+# Euro sign.
+_LEAD_FIRST, _LEAD_LAST = 0xC2, 0xF4  # UTF-8 lead bytes, seen as Latin-1
+_TAIL_FIRST, _TAIL_LAST = 0x80, 0xBF  # UTF-8 continuation bytes, seen as Latin-1
+_CP1252_C1 = (  # the glyphs cp1252 maps bytes 80..9f onto
+    0x20AC, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030,
+    0x0160, 0x2039, 0x0152, 0x017D, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022,
+    0x2013, 0x2014, 0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x017E, 0x0178,
 )
-MOJIBAKE = re.compile(f"[{_LEAD}][{_TAIL}{_CP1252}]|﻿»¿")
 
-REPLACEMENT = "�"
-BOM = "﻿"
+_LEAD = f"{chr(_LEAD_FIRST)}-{chr(_LEAD_LAST)}"
+_TAIL = f"{chr(_TAIL_FIRST)}-{chr(_TAIL_LAST)}" + "".join(chr(c) for c in _CP1252_C1)
+MOJIBAKE = re.compile(f"[{_LEAD}][{_TAIL}]")
+
+REPLACEMENT = chr(0xFFFD)
+BOM = chr(0xFEFF)
 
 
 def tracked_text_files() -> list[Path]:
