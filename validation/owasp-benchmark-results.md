@@ -455,3 +455,121 @@ result.
   `semgrep-benchmark-python-v6-seconly-verdicts.json` (and `-annotated` variants) — the all-rules and
   security-only Python verdict sets.
 - `validation/show_cases.py` — the reading aid used to work through the sample.
+
+---
+
+# Targeted re-test after the v7.0 catalog changes — 64 fresh cases (2026-07-20)
+
+**This section extends the two runs above; it replaces neither.** It exists to answer one narrow
+question: *did writing v6.0's three error root-causes into the catalog and the Phase 5 self-verify
+step actually change the verdicts on cases nobody had scored?* It is a regression test for a specific
+fix, not a new general accuracy estimate — read the scope caveats below before quoting the number.
+
+**Date produced:** 2026-07-20
+**Targets:** the same two clones at the same commits as the 208-case run — BenchmarkJava `79b9bd6`,
+BenchmarkPython `f129148`. Static-analysis-only; both clones were read, never run.
+
+## Sample
+
+| Suite | Per category | Categories | Total |
+|---|---|---|---|
+| Java | 8 | cmdi, ldapi, pathtraver, sqli, xss | **40** |
+| Python | 6 | cmdi, pathtraver, sqli, xss | **24** |
+| | | | **64 total** |
+
+Drawn with a new seed (7) and, critically, with `sample_benchmark.py --exclude` pointed at all three
+prior sample files. **Overlap with the 66-case and 208-case runs is exactly zero**, verified by set
+intersection rather than assumed. The categories are the ones the v6.0 errors landed in; that
+concentration is deliberate and is also the main reason the headline figure below is not a general
+estimate.
+
+```bash
+python validation/sample_benchmark.py --benchmark-root ../BenchmarkJava \
+    --per-category 8 --seed 7 --categories cmdi ldapi pathtraver sqli xss \
+    --exclude validation/data/benchmark-sample.csv validation/data/benchmark-sample-java-v6.csv \
+    --out validation/data/benchmark-sample-java-v7.csv
+
+python validation/sample_benchmark.py --benchmark-root ../BenchmarkPython \
+    --per-category 6 --seed 7 --categories cmdi pathtraver sqli xss \
+    --exclude validation/data/benchmark-sample-python-v6.csv \
+    --out validation/data/benchmark-sample-python-v7.csv
+
+python validation/score.py --benchmark-root ../BenchmarkJava \
+    --verdicts validation/data/sentinel-benchmark-java-v7-verdicts.json --label "SENTINEL Java v7" --markdown
+python validation/score.py --benchmark-root ../BenchmarkPython \
+    --verdicts validation/data/sentinel-benchmark-python-v7-verdicts.json --label "SENTINEL Python v7" --markdown
+```
+
+`--exclude` reads only the `test_name` column of the prior samples, so excluding them does not expose
+any ground truth. Verdicts were recorded in full before `score.py` was run once.
+
+## Results — SENTINEL, Java (40 fresh cases, 2026-07-20)
+
+| Category | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| cmdi | 8 | 6 | 0 | 0 | 2 | 1.0000 | 1.0000 | 1.0000 |
+| ldapi | 8 | 4 | 0 | 0 | 4 | 1.0000 | 1.0000 | 1.0000 |
+| pathtraver | 8 | 3 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| sqli | 8 | 6 | 0 | 0 | 2 | 1.0000 | 1.0000 | 1.0000 |
+| xss | 8 | 3 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| **all (SENTINEL Java v7)** | 40 | 22 | 0 | 0 | 18 | 1.0000 | 1.0000 | 1.0000 |
+
+## Results — SENTINEL, Python (24 fresh cases, 2026-07-20)
+
+| Category | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| cmdi | 6 | 5 | 0 | 0 | 1 | 1.0000 | 1.0000 | 1.0000 |
+| pathtraver | 6 | 2 | 0 | 0 | 4 | 1.0000 | 1.0000 | 1.0000 |
+| sqli | 6 | 0 | 0 | 0 | 6 | n/a | n/a | n/a |
+| xss | 6 | 1 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| **all (SENTINEL Python v7)** | 24 | 8 | 0 | 0 | 16 | 1.0000 | 1.0000 | 1.0000 |
+
+The Python `sqli` row has no positives to score: all six drawn cases bind their value through
+`cur.execute(sql, (bar,))` with a literal `?`, so the correct verdict is "not vulnerable" six times
+regardless of how the taint arrives. Two of those six (`00285`, `00012`) do carry live taint all the
+way to the sink and were still called safe, which is the intended reading of a parameterized sink —
+but the cell contributes no recall evidence and is shown as `n/a` rather than as a perfect score.
+
+## Did the three lessons actually fire?
+
+This is the part that matters more than the aggregate. The fresh sample happened to contain all three
+trap shapes, and each was resolved by the rule written for it:
+
+| Lesson (v7 addition) | Cases drawn | Result |
+|---|---|---|
+| Unverified source helper — open the helper before asserting taint | 4 (`01754`, `02738`, `01790` Java; `01114` Python) | All 4 correctly **not vulnerable**. The identical shape produced 5 false positives in the 208-case run. |
+| Genuine wrapper source — the same check, cutting the other way | 5 (`02455` Java; `00899`, `00285`, `00286`, `00840` Python) | All 5 correctly treated as real sources; the rule did not over-correct into dismissing legitimate wrappers. |
+| Taint in an `exec` environment (`envp`) is an injection vector | 1 with taint in `envp` (`00172`); 3 more with a constant `envp` (`01193`, `01864`, `02343`) | `00172` correctly **vulnerable** — the exact call v6.0 got wrong twice. The other three were checked at the `envp` position and correctly resolved on other grounds. |
+| Statically registered route segment is not attacker-controlled | 2 (`01017`, `01019` Python) | Both correctly **not vulnerable**; the route registration was read before judging `request.path.split("/")[1]`. |
+
+## Reading this number honestly
+
+A second 1.0000 in this project's history should trigger suspicion, not celebration — the last one
+(66 cases, v5.0) did not survive scaling. Four things bound what this run establishes:
+
+- **The sample is deliberately biased toward the fix.** Categories were chosen *because* the v6.0
+  errors were there. That is the right design for a regression test and the wrong design for an
+  accuracy estimate. This number is not comparable to the 208-case F1 of 0.9358 and must not be
+  quoted as an improvement on it. The honest comparison is per-trap, in the table above.
+- **The traps were known going in.** Scoring was blind to the truth column, but not blind to the
+  existence of `getTheValue`, `envp`, and fixed-route segments — that is precisely what was being
+  tested. It measures whether encoded guidance is applied on unseen code, not whether a cold auditor
+  would rediscover the trap. This is the same limitation v6.0 flagged for its Python run, and it
+  applies here by construction rather than by accident.
+- **64 cases is small.** Per-category cells are 8 and 6. The overall rows are the only figures worth
+  reading, and even those rest on 22 and 8 true positives.
+- **No comparator was run.** Semgrep was not re-run on this sample; there is no head-to-head here.
+  The 208-case run remains the comparative record.
+
+What it does establish: on 64 cases never previously scored, containing 11 instances of the three
+shapes that caused every v6.0 error, the corrected methodology produced no repeat of any of them, and
+did not overcorrect into dismissing the four genuine wrapper-sourced cases. That is the specific,
+limited claim.
+
+## Files
+
+- `validation/data/benchmark-sample-java-v7.csv`, `...-python-v7.csv` — the fresh samples (seed 7,
+  excluding all prior draws).
+- `validation/data/sentinel-benchmark-java-v7-verdicts.json` / `...-annotated.json` — per-case
+  verdicts with the dataflow reasoning behind each.
+- `validation/data/sentinel-benchmark-python-v7-verdicts.json` / `...-annotated.json` — same, Python.

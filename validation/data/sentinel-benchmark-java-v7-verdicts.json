@@ -1,0 +1,202 @@
+[
+ {
+  "test_name": "BenchmarkTest00172",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00293",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00494",
+  "category": "cmdi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00968",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01193",
+  "category": "cmdi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01601",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01864",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest02343",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00139",
+  "category": "ldapi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00530",
+  "category": "ldapi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00694",
+  "category": "ldapi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00695",
+  "category": "ldapi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01242",
+  "category": "ldapi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01754",
+  "category": "ldapi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest02114",
+  "category": "ldapi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest02306",
+  "category": "ldapi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00135",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00137",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00220",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00696",
+  "category": "pathtraver",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01156",
+  "category": "pathtraver",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01157",
+  "category": "pathtraver",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01160",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01570",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00429",
+  "category": "sqli",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00760",
+  "category": "sqli",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01723",
+  "category": "sqli",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01732",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01882",
+  "category": "sqli",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01883",
+  "category": "sqli",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest02455",
+  "category": "sqli",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest02738",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00276",
+  "category": "xss",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00278",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00284",
+  "category": "xss",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00721",
+  "category": "xss",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest01341",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01790",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01924",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest02045",
+  "category": "xss",
+  "vulnerable": false
+ }
+]

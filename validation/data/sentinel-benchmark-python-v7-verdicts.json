@@ -1,0 +1,122 @@
+[
+ {
+  "test_name": "BenchmarkTest00166",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00267",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00268",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00512",
+  "category": "cmdi",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00607",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00899",
+  "category": "cmdi",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00010",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00089",
+  "category": "pathtraver",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00443",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00739",
+  "category": "pathtraver",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00922",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01114",
+  "category": "pathtraver",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00011",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00012",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00192",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00285",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00286",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01203",
+  "category": "sqli",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00150",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00256",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest00366",
+  "category": "xss",
+  "vulnerable": true
+ },
+ {
+  "test_name": "BenchmarkTest00840",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01017",
+  "category": "xss",
+  "vulnerable": false
+ },
+ {
+  "test_name": "BenchmarkTest01019",
+  "category": "xss",
+  "vulnerable": false
+ }
+]

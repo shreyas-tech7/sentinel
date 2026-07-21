@@ -28,6 +28,7 @@ Adopt these stances for the entire review; they are what separate a real audit f
 - **Think like an attacker, write like a senior engineer.** Trace how hostile input moves through the system, then explain findings and fixes the way a thoughtful staff engineer would in code review.
 - **Trust no input and no boundary by default.** Every client-supplied value — path and query params, request bodies, headers, file uploads, webhook payloads, and any JWT claim a user can edit — is hostile until validated server-side. Authentication (who you are) is never authorization (what you may touch).
 - **"Looks normal" is not "is safe."** Idiomatic-looking code is exactly where authorization and validation gaps hide, because the happy path works perfectly.
+- **One sink found is not the file finished.** Finding an issue is the signal to note it and keep reading, never to move on. Read every file and function you open to its end, and look for co-located but *distinct* problems — a hardcoded credential sitting a few lines below the injection you came for, a second unguarded handler in the same router, a weak comparison beside the missing authorization check. Vibe-coded files concentrate defects rather than spreading them evenly, so the highest-yield place to find the second finding is the file that just produced the first.
 
 ## How to run an audit
 
@@ -111,7 +112,7 @@ Trace attacker-controlled data from its entry point to every sensitive sink, and
 - **Cross-Site Request Forgery** — is every state-changing request bound to something a cross-origin page cannot supply (an anti-CSRF token, `SameSite` cookies), rather than to the ambient session cookie alone? Bearer-token APIs are not CSRF-able — don't report those.
 
 **B. Input, logic, and execution sinks**
-- **Injection** — raw/concatenated DB queries, dynamic command execution, eval-style sinks, unescaped templates.
+- **Injection** — raw/concatenated DB queries, dynamic command execution, eval-style sinks, unescaped templates. On `exec`-family calls, the command string is not the only tainted position: taint reaching the child's environment (`envp`, `env=`, an inherited variable the command expands) hands the attacker `LD_PRELOAD`, `IFS`, and `PATH`, which is an execution primitive. Report it rather than ruling it out because it isn't the command itself.
 - **XSS** — unescaped user data rendered into HTML, dangerous inner-HTML assignments, unsafe templating.
 - **Mass assignment / over-allocation** — are writes restricted to an explicit field allow-list, or can an attacker set `role`, `is_admin`, `price`, or billing status?
 - **Excessive data exposure** — do responses return only the fields the caller may see, or is a whole row serialized and trimmed by the client? (Mass assignment is the write path; this is the read path.)
@@ -181,6 +182,8 @@ Each delta finding still passes the full Phase 5 evidence standard and severity/
 ## PHASE 5 — Deliver remediation
 
 **Self-verify first.** Re-read each prospective finding. If a vulnerable path is unreachable, purely theoretical, or rests on an inaccurate syntax assumption, discard or downgrade it. Assign an explicit confidence to what remains. Prefer false positives over false negatives, but label confidence so the user can triage.
+
+**Verify the source, not just the flow.** The most common way a well-traced finding turns out wrong is that its *premise* was never checked: the dataflow is correct, but the value at the head of it was never attacker-controlled. For each finding, confirm you opened the code that produces the source — a helper or wrapper method actually reads the request rather than returning a constant, and a route-derived segment is dynamically resolved rather than pinned by a statically registered route. `references/vulnerability-catalog.md` → "Before you assert taint" has both checks. Applying this discipline to one helper and skipping it on the next is how it fails in practice; run it on every source you assert.
 
 ### Evidence standard
 

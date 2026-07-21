@@ -1,0 +1,246 @@
+[
+ {
+  "test_name": "BenchmarkTest00172",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Header source, URL-decoded, survives a HashMap put/get round-trip. Command string is fixed (Utils.getInsecureOSCommandString) but bar lands in argsEnv, the envp argument of r.exec(args, argsEnv, dir). Environment control of a child process is an execution primitive (LD_PRELOAD, IFS, PATH) — reported per the v7 envp guidance rather than dismissed as 'not the command string'."
+ },
+ {
+  "test_name": "BenchmarkTest00293",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Header source, URL-decoded, base64 encode+decode round-trip preserves the value. bar concatenated into 'echo ' + bar and run under sh -c / cmd.exe via ProcessBuilder.start()."
+ },
+ {
+  "test_name": "BenchmarkTest00494",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "List position trap: valuesList is [safe, param, moresafe]; remove(0) drops 'safe', leaving [param, moresafe]; get(1) returns the constant 'moresafe'. param never reaches r.exec."
+ },
+ {
+  "test_name": "BenchmarkTest00968",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Cookie source. Inner-class Test.doSomething is a plain identity (bar = param; return bar) — opened and confirmed. bar concatenated into 'echo ' + bar under sh -c via ProcessBuilder."
+ },
+ {
+  "test_name": "BenchmarkTest01193",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "Dead-taint guard inside the inner class: (7*42)-86 = 208 > 200 is always true, so bar takes the constant 'This_should_always_happen'. argsEnv is the literal {\"foo=bar\"}, so the envp position carries no taint either — checked explicitly rather than assumed."
+ },
+ {
+  "test_name": "BenchmarkTest01601",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "getParameterValues source. Inner class: [safe, param, moresafe], remove(0) leaves [param, moresafe], get(0) returns param — the live position, unlike 00494. bar reaches 'echo ' + bar under sh -c."
+ },
+ {
+  "test_name": "BenchmarkTest01864",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Cookie source. Ternary is live on the false arm: (7*42)-106 = 188 > 200 is false, so bar = param. Reaches r.exec(cmd + bar, argsEnv) in the command string itself; on non-Windows cmd is empty so bar is the whole command."
+ },
+ {
+  "test_name": "BenchmarkTest02343",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Source is a request parameter *name* matching a known value — attacker-controlled. ThingFactory.createThing() was opened: it reflectively builds Thing1 or Thing2, and both doSomething implementations are taint-preserving (Thing1 identity, Thing2 StringBuilder round-trip). bar reaches r.exec(cmd + bar, argsEnv, dir)."
+ },
+
+ {
+  "test_name": "BenchmarkTest00139",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Long propagator chain (StringBuilder, HashMap, substring, base64, split) is entirely discarded: bar = thing.doSomething(\"barbarians_at_the_gate\"), a static string. The LDAP filter interpolates a constant."
+ },
+ {
+  "test_name": "BenchmarkTest00530",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Switch target is \"ABC\".charAt(1) = 'B', so the case 'B' arm assigns the constant \"bob\". The param-assigning arms ('A','C','D') are unreachable."
+ },
+ {
+  "test_name": "BenchmarkTest00694",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "getParameterValues source assigned straight to bar and concatenated into the LDAP filter \"(&(objectclass=person)(uid=\" + bar + \"))\", passed to ctx.search. No escaping."
+ },
+ {
+  "test_name": "BenchmarkTest00695",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "getParameterValues source stored under keyB-9400 and read back out — the live key, not the decoy keyA. bar concatenated into the LDAP filter and searched."
+ },
+ {
+  "test_name": "BenchmarkTest01242",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "request.getParameter source through the inner class to ThingFactory (taint-preserving, confirmed). The filter parameterizes street via {0} but concatenates bar into the uid clause directly — a correct control applied to the wrong position."
+ },
+ {
+  "test_name": "BenchmarkTest01754",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Source is scr.getTheValue(...). SeparateClassRequest was opened before asserting taint: getTheValue ignores its argument and returns the hardcoded \"bar\", unlike getTheParameter/getTheCookie on the same class, which are genuine. The HashMap round-trip that follows is faithful but carries a constant. This is the v6 false-positive shape the v7 source-evaluation rule targets."
+ },
+ {
+  "test_name": "BenchmarkTest02114",
+  "category": "ldapi",
+  "vulnerable": false,
+  "reason": "Genuine request.getParameter source, but the list position kills it: remove(0) leaves [param, moresafe] and get(1) returns the constant 'moresafe'."
+ },
+ {
+  "test_name": "BenchmarkTest02306",
+  "category": "ldapi",
+  "vulnerable": true,
+  "reason": "Parameter-name source (attacker-controlled) through ThingFactory, which is taint-preserving. bar concatenated into the LDAP uid filter and searched."
+ },
+
+ {
+  "test_name": "BenchmarkTest00135",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "\"ABC\".charAt(1) = 'B' selects the constant \"bob\"; the param arms are unreachable. The FileInputStream path is TESTFILES_DIR + a constant."
+ },
+ {
+  "test_name": "BenchmarkTest00137",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Safe overwrite: bar is first read from keyB-53289 (the tainted value) and then immediately reassigned from keyA-53289 (\"a_Value\"). Only the constant reaches Files.newInputStream."
+ },
+ {
+  "test_name": "BenchmarkTest00220",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Header-name source feeds a long propagator chain that is then discarded — bar = thing.doSomething(\"barbarians_at_the_gate\"). FileOutputStream opens a constant path."
+ },
+ {
+  "test_name": "BenchmarkTest00696",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "\"ABC\".charAt(2) = 'C', which falls into the case 'C'/'D' arm assigning bar = param. Reaches new File(TESTFILES_DIR, bar) with no normalization or containment check."
+ },
+ {
+  "test_name": "BenchmarkTest01156",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "Header source through the inner class's HashMap keyB-55476 round-trip — value preserved. bar concatenated into a file: URI and opened as a File."
+ },
+ {
+  "test_name": "BenchmarkTest01157",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "Same file-URI sink as 01156; the inner class switches on \"ABC\".charAt(2) = 'C', the live arm, so bar = param."
+ },
+ {
+  "test_name": "BenchmarkTest01160",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Dead-taint guard: (7*42)-86 = 208 > 200 always true, so bar is the constant \"This_should_always_happen\"."
+ },
+ {
+  "test_name": "BenchmarkTest01570",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Ternary condition (7*18)+106 = 232 > 200 is always true, selecting the constant arm. Note the arithmetic differs from the 188>200 shape elsewhere in the sample — evaluated, not pattern-matched."
+ },
+
+ {
+  "test_name": "BenchmarkTest00429",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Ternary is live on the false arm ((7*42)-106 = 188 > 200 is false) so bar = param. prepareStatement is used, but the SQL string was already built by concatenating bar into the PASSWORD literal; the single ? binds USERNAME only. A parameterized API around a pre-concatenated string is still injectable."
+ },
+ {
+  "test_name": "BenchmarkTest00760",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "getParameterValues source through a HashMap keyB round-trip into \"{call \" + bar + \"}\", executed via connection.prepareCall. The callable-statement escape syntax is built by concatenation."
+ },
+ {
+  "test_name": "BenchmarkTest01723",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Source is hand-parsed out of request.getQueryString() and URL-decoded — genuine request data. Inner-class ternary takes the false arm (188 > 200 false) so bar = param, concatenated into the PASSWORD literal and run through JDBCtemplate.queryForObject."
+ },
+ {
+  "test_name": "BenchmarkTest01732",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Same query-string source as 01723, but the inner-class ternary is (7*18)+106 = 232 > 200, always true, so bar is the constant. Nothing tainted reaches executeQuery."
+ },
+ {
+  "test_name": "BenchmarkTest01882",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Cookie source through a static doSomething HashMap keyB round-trip; bar concatenated into the PASSWORD literal and run via JDBCtemplate.query. The RowMapper escapes on output, which protects the response, not the query."
+ },
+ {
+  "test_name": "BenchmarkTest01883",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Cookie source, doSomething is a bare identity, bar concatenated into the SQL and executed via queryForRowSet."
+ },
+ {
+  "test_name": "BenchmarkTest02455",
+  "category": "sqli",
+  "vulnerable": true,
+  "reason": "Source is scr.getTheParameter(...) — opened and confirmed to be a real delegation to request.getParameter, not the getTheValue decoy that appears elsewhere in this sample. Live ternary arm (188 > 200 false) so bar = param, concatenated into an INSERT and run via executeUpdate."
+ },
+ {
+  "test_name": "BenchmarkTest02738",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Source is scr.getTheValue(...), the hardcoded-\"bar\" decoy — checked against SeparateClassRequest before tracing. Safe twice over: doSomething's remove(0)/get(1) also returns the constant 'moresafe'."
+ },
+
+ {
+  "test_name": "BenchmarkTest00276",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "Referer header is attacker-controlled. Ternary takes the live false arm (188 > 200 false) so bar = param, written unescaped via getWriter().print with X-XSS-Protection explicitly disabled."
+ },
+ {
+  "test_name": "BenchmarkTest00278",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "HtmlUtils.htmlEscape(param) is the correct encoder for this HTML-body sink and is applied to the value actually printed."
+ },
+ {
+  "test_name": "BenchmarkTest00284",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "Referer header assigned directly to bar and printed unescaped via getWriter().println."
+ },
+ {
+  "test_name": "BenchmarkTest00721",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "remove(0)/get(0) returns the live param position. bar is passed as a printf *argument* (%1$s) rather than the format string, so it is substituted verbatim into the HTML response with no encoding."
+ },
+ {
+  "test_name": "BenchmarkTest01341",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "The inner class runs the full propagator chain and then throws it away: bar = thing.doSomething(\"barbarians_at_the_gate\"). A constant is formatted into the response."
+ },
+ {
+  "test_name": "BenchmarkTest01790",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Two independent reasons: the source is the getTheValue hardcoded-\"bar\" decoy, and StringEscapeUtils.escapeHtml is applied before the write. Source checked first, per the v7 rule, rather than resting on the sanitizer alone."
+ },
+ {
+  "test_name": "BenchmarkTest01924",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "htmlEscape neutralizes the XSS metacharacters before bar is used. bar is then passed as printf's *format string*, which is a genuine format-string smell, but the only substitutable arguments are the literals \"a\" and \"b\" and htmlEscape has already removed < > & \" ' — no HTML can be produced. Not an XSS by this suite's definition."
+ },
+ {
+  "test_name": "BenchmarkTest02045",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Dead-taint guard: 208 > 200 always true, so bar is the constant. The tainted Referer never reaches out.format."
+ }
+]

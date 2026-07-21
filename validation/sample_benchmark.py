@@ -42,11 +42,36 @@ def load_cases(expected_csv: Path) -> dict[str, list[str]]:
     return by_category
 
 
-def draw(by_category: dict[str, list[str]], per_category: int, seed: int) -> list[tuple[str, str]]:
+def load_excluded(paths: list[Path]) -> set[str]:
+    """Return the set of test names appearing in previously drawn sample CSVs.
+
+    Reads only the test_name column, so excluding a prior sample never exposes
+    the ground-truth flag; blindness is preserved.
+    """
+    excluded: set[str] = set()
+    for path in paths:
+        with path.open(newline="") as fh:
+            reader = csv.reader(fh)
+            next(reader, None)  # header
+            for row in reader:
+                if row:
+                    excluded.add(row[0].strip())
+    return excluded
+
+
+def draw(
+    by_category: dict[str, list[str]],
+    per_category: int,
+    seed: int,
+    exclude: set[str] | None = None,
+    categories: list[str] | None = None,
+) -> list[tuple[str, str]]:
     rng = random.Random(seed)
+    exclude = exclude or set()
     sample: list[tuple[str, str]] = []
-    for category in sorted(by_category):
-        names = sorted(by_category[category])
+    wanted = sorted(by_category) if categories is None else sorted(categories)
+    for category in wanted:
+        names = sorted(n for n in by_category.get(category, []) if n not in exclude)
         picked = rng.sample(names, min(per_category, len(names)))
         sample.extend((name, category) for name in sorted(picked))
     return sample
@@ -64,6 +89,20 @@ def main() -> int:
         default=None,
         help="ground-truth CSV; auto-discovered inside --benchmark-root when omitted",
     )
+    parser.add_argument(
+        "--exclude",
+        type=Path,
+        nargs="*",
+        default=[],
+        help="previously drawn sample CSVs whose cases must not be redrawn; "
+        "reads only the test_name column, so blindness is preserved",
+    )
+    parser.add_argument(
+        "--categories",
+        nargs="*",
+        default=None,
+        help="restrict the draw to these categories (default: every category)",
+    )
     args = parser.parse_args()
 
     try:
@@ -72,7 +111,15 @@ def main() -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    sample = draw(load_cases(expected_csv), args.per_category, args.seed)
+    try:
+        excluded = load_excluded(args.exclude)
+    except OSError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    sample = draw(
+        load_cases(expected_csv), args.per_category, args.seed, excluded, args.categories
+    )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="") as fh:
@@ -80,6 +127,8 @@ def main() -> int:
         writer.writerow(["test_name", "category"])
         writer.writerows(sample)
 
+    if excluded:
+        print(f"excluded {len(excluded)} previously drawn case(s)")
     print(f"wrote {len(sample)} sampled cases to {args.out}")
     return 0
 

@@ -1,0 +1,149 @@
+[
+ {
+  "test_name": "BenchmarkTest00166",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "request.form source through a dict keyB round-trip. bar is f-string-interpolated into 'sh -c echo {bar}' and passed to subprocess.run(argStr, shell=True) — a single string under a shell."
+ },
+ {
+  "test_name": "BenchmarkTest00267",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Same dict round-trip. shell=True is absent, but the arg list is ['sh', '-c', f'echo {bar}'] — the third element is a shell program that sh itself parses, so metacharacters in bar still execute. The list form is not a control here."
+ },
+ {
+  "test_name": "BenchmarkTest00268",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Live guard, read carefully: TestParam is 'This should never happen' and the test is `if 'should' not in TestParam` — 'should' IS present, so the condition is false and the else arm assigns bar = param. The negation inverts the usual dead-guard shape."
+ },
+ {
+  "test_name": "BenchmarkTest00512",
+  "category": "cmdi",
+  "vulnerable": false,
+  "reason": "configparser stores param under keyB-41882 but bar is read back from keyA-41882 ('a_Value'). The tainted key is written and never read."
+ },
+ {
+  "test_name": "BenchmarkTest00607",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "String surgery preserves the taint exactly: 'help' + param + 'snapes on a plane', then [4:-17] strips precisely len('help')=4 and len('snapes on a plane')=17, recovering param unchanged. Reaches shell=True."
+ },
+ {
+  "test_name": "BenchmarkTest00899",
+  "category": "cmdi",
+  "vulnerable": true,
+  "reason": "Source is wrapped.get_query_parameter(...) — request_wrapper was opened and this method genuinely delegates to request.args.get, unlike get_safe_value on the same class. match on 'ABC'[0] = 'A' selects the bar = param arm."
+ },
+
+ {
+  "test_name": "BenchmarkTest00010",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Safe twice: the ternary condition 7*18+106 = 232 > 200 is always true so bar is a constant, and the sink additionally resolves the path and enforces a startswith containment check against TESTFILES_DIR."
+ },
+ {
+  "test_name": "BenchmarkTest00089",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "request.form source through a dict keyB round-trip into pathlib's testfiles / bar, with no resolve() and no containment check. An absolute bar replaces the base entirely under pathlib's / operator; ../ escapes it."
+ },
+ {
+  "test_name": "BenchmarkTest00443",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "List position: ['safe', param, 'moresafe'], pop(0) leaves [param, 'moresafe'], lst[1] is the constant 'moresafe'."
+ },
+ {
+  "test_name": "BenchmarkTest00739",
+  "category": "pathtraver",
+  "vulnerable": true,
+  "reason": "request.args source; the ternary (7*42)-106 = 188 > 200 is false, so bar = param. The parsed fileURI is a decoy — the actual open is codecs.open(f'{TESTFILES_DIR}/{bar}'), unnormalized."
+ },
+ {
+  "test_name": "BenchmarkTest00922",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Genuine hand-parsed query_string source, but pop(0)/lst[1] yields the constant 'moresafe' before the open."
+ },
+ {
+  "test_name": "BenchmarkTest01114",
+  "category": "pathtraver",
+  "vulnerable": false,
+  "reason": "Source is scr.get_safe_value(...), which separate_request.py defines as returning the hardcoded 'bar' — checked before tracing, per the v7 source-evaluation rule. The list positioning would have made it safe regardless."
+ },
+
+ {
+  "test_name": "BenchmarkTest00011",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Cookie source and a live guard ('should' in bar is true, so bar = param), but the sink is fully parameterized: sql holds a literal ? and the value is bound via cur.execute(sql, (bar,)). Taint reaches a bound parameter, not the statement text."
+ },
+ {
+  "test_name": "BenchmarkTest00012",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "The [4:-17] slice does recover param intact, but the sink binds it as a ? parameter. Correctly parameterized."
+ },
+ {
+  "test_name": "BenchmarkTest00192",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "'ABC'[1] = 'B' selects the constant 'bob', and the sink is parameterized regardless."
+ },
+ {
+  "test_name": "BenchmarkTest00285",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "get_form_parameter is a genuine source and configparser returns the tainted keyB value, so bar is attacker-controlled — but cur.execute binds it as a ? parameter. Vulnerable dataflow, non-vulnerable sink."
+ },
+ {
+  "test_name": "BenchmarkTest00286",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "Safe on both counts: bar is read back from keyA-59255 ('a_Value'), and the sink is parameterized."
+ },
+ {
+  "test_name": "BenchmarkTest01203",
+  "category": "sqli",
+  "vulnerable": false,
+  "reason": "request.args source passed directly, but bound as a ? parameter via cur.execute(sql, (param,)). No concatenation anywhere in the statement."
+ },
+
+ {
+  "test_name": "BenchmarkTest00150",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "bar = param.split(' ')[0] is attacker-controlled, but the sink is a custom HTTP response header, not the body — the response body is a fixed sentence. A browser does not parse header values as markup, so this is not XSS. (Header-injection would need CR/LF, which Flask/Werkzeug rejects.)"
+ },
+ {
+  "test_name": "BenchmarkTest00256",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Dead guard (7*42-86 = 208 > 200 always true) assigns the constant, and the sink is a response header rather than the body."
+ },
+ {
+  "test_name": "BenchmarkTest00366",
+  "category": "xss",
+  "vulnerable": true,
+  "reason": "Source is a form field *name* whose value matches the marker — attacker-controlled. Dict keyB round-trip preserves it, and it is %s-interpolated into the response body with no escaping."
+ },
+ {
+  "test_name": "BenchmarkTest00840",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Genuine get_query_parameter source, but a safe overwrite kills it: bar is assigned keyB (tainted) and then immediately reassigned keyA ('a-Value'), which is what reaches .format()."
+ },
+ {
+  "test_name": "BenchmarkTest01017",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Source is request.path.split('/')[1]. The handler is registered at the fixed literal route /benchmark/xss-00/BenchmarkTest01017, so that segment is always 'benchmark' — a constant pinned by the route table, not attacker-controlled. This is the v7 statically-registered-route check. The keyB->keyA overwrite makes it safe a second time."
+ },
+ {
+  "test_name": "BenchmarkTest01019",
+  "category": "xss",
+  "vulnerable": false,
+  "reason": "Same statically registered route, so request.path.split('/')[1] is the constant 'benchmark'; escape_for_html is then applied on top. Safe on both the source and the sink."
+ }
+]

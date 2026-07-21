@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import sample_benchmark
 import score
 
 
@@ -133,6 +134,49 @@ class RenderTests(unittest.TestCase):
         table = score.render_markdown(counts, "SENTINEL")
         self.assertIn("| sqli | 4 | 1 | 0 | 1 | 2 |", table)
         self.assertIn("**all (SENTINEL)**", table)
+
+
+class SamplerExclusionTests(unittest.TestCase):
+    """The --exclude / --categories draw used to build non-overlapping samples."""
+
+    POOL = {
+        "sqli": ["T1", "T2", "T3", "T4"],
+        "cmdi": ["T5", "T6", "T7", "T8"],
+    }
+
+    def test_excluded_names_are_never_drawn(self):
+        drawn = sample_benchmark.draw(self.POOL, 2, seed=42, exclude={"T1", "T2", "T5"})
+        names = {name for name, _ in drawn}
+        self.assertEqual(names & {"T1", "T2", "T5"}, set())
+        self.assertEqual(len(names), 4)
+
+    def test_draw_is_disjoint_from_a_prior_draw(self):
+        first = sample_benchmark.draw(self.POOL, 2, seed=42)
+        prior = {name for name, _ in first}
+        second = sample_benchmark.draw(self.POOL, 2, seed=42, exclude=prior)
+        self.assertEqual(prior & {name for name, _ in second}, set())
+
+    def test_categories_restricts_the_draw(self):
+        drawn = sample_benchmark.draw(self.POOL, 2, seed=42, categories=["sqli"])
+        self.assertEqual({category for _, category in drawn}, {"sqli"})
+
+    def test_draw_is_capped_by_remaining_pool(self):
+        drawn = sample_benchmark.draw(self.POOL, 10, seed=42, exclude={"T1"})
+        self.assertEqual(len(drawn), 7)
+
+    def test_load_excluded_reads_only_the_name_column(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prior = Path(tmp) / "prior.csv"
+            prior.write_text("test_name,category\nT1,sqli\nT2,cmdi\n")
+            self.assertEqual(sample_benchmark.load_excluded([prior]), {"T1", "T2"})
+
+    def test_load_excluded_unions_multiple_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            a = Path(tmp) / "a.csv"
+            b = Path(tmp) / "b.csv"
+            a.write_text("test_name,category\nT1,sqli\n")
+            b.write_text("test_name,category\nT2,cmdi\n")
+            self.assertEqual(sample_benchmark.load_excluded([a, b]), {"T1", "T2"})
 
 
 if __name__ == "__main__":
