@@ -112,6 +112,7 @@ Every version bump gets a [CHANGELOG.md](CHANGELOG.md) entry under a new heading
    python scripts/check_standards_currency.py  # cited standards vs. latest editions
    python scripts/check_schema.py              # findings schema + its worked example
    python scripts/check_skill_package.py       # skill name, description limits, semver
+   python scripts/check_encoding.py            # mojibake / lost bytes in tracked text
    python -m unittest discover -s validation -p 'test_*.py'   # scoring + schema conformance
    ```
    These are the same checks CI runs ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
@@ -124,5 +125,27 @@ Every version bump gets a [CHANGELOG.md](CHANGELOG.md) entry under a new heading
    silent pass.
 4. Reference the issue you opened, and describe how you verified any code you added actually blocks
    the attack it claims to.
+
+## Editing files on Windows
+
+**Write files with a direct file-write, not a shell heredoc or a PowerShell here-string.**
+
+This project has been bitten twice by the same platform quirk. In v7.0 a PowerShell here-string
+mangled a commit message; in v8.0 a cp1252/UTF-8 round trip mojibaked PR bodies, turning every em
+dash and curly quote into noise. Both took longer to repair than to cause, and neither was obvious on
+review — the file still opened and the prose still read, only the punctuation was wrong.
+
+The cause is that a Windows shell assumes cp1252 while this repo's content is UTF-8. Any text that
+passes *through* the shell is at risk; text written straight to disk is not. Concretely:
+
+- Prefer your editor, or a script that calls `Path.write_text(..., encoding="utf-8")`.
+- If you must use PowerShell, pass `-Encoding utf8` explicitly — `Set-Content` and `Add-Content`
+  default to the system ANSI codepage.
+- Do not build multi-line prose (commit messages, PR bodies, docs) inside a `<<EOF` heredoc or a
+  `@'...'@` here-string.
+
+`scripts/check_encoding.py` catches the result if it happens anyway, and runs in CI. It reads file
+bytes rather than terminal output on purpose: a Windows console renders a *correctly* encoded em dash
+as a replacement glyph, so what you see in a terminal is not evidence either way.
 
 Thank you — careful, defensible contributions are what keep this credible.

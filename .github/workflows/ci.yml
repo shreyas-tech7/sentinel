@@ -63,6 +63,13 @@ jobs:
       - name: Check skill package
         run: python scripts/check_skill_package.py
 
+      # Mojibake and encoding damage in tracked text. Two incidents (v7.0, v8.0)
+      # came from text round-tripping through a Windows shell that assumes cp1252
+      # while the content is UTF-8. Linux CI cannot reproduce that corruption, but
+      # it can refuse to accept the result of it.
+      - name: Check encoding
+        run: python scripts/check_encoding.py
+
   secret-scan:
     name: Secret scan (full history)
     runs-on: ubuntu-latest
