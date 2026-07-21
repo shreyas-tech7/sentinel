@@ -33,8 +33,9 @@ Every finding can also be exported to a stable, versioned
 [standards-currency check](scripts/check_standards_currency.py) flags when a cited standard publishes a
 newer edition.
 
-As of **v6.0**, accuracy is [measured on 208 blind OWASP Benchmark cases across two
-languages](validation/owasp-benchmark-results.md), head-to-head with Semgrep on the identical files:
+Accuracy is [measured on blind OWASP Benchmark samples across two
+languages](validation/owasp-benchmark-results.md), head-to-head with Semgrep on the identical files.
+**The 208-case run is the headline figure** — the largest, coldest sample, and the one to quote:
 
 | Blind sample (2026-07-19) | N | Precision | Recall | F1 |
 |---|---|---|---|---|
@@ -45,9 +46,28 @@ languages](validation/owasp-benchmark-results.md), head-to-head with Semgrep on 
 
 These supersede an earlier 66-case Java-only run that scored a perfect 1.0000 F1 — **that result did
 not survive scaling**, and the eight cases it got wrong at 110 are individually documented with root
-causes. A separate [Juice Shop pass](validation/juice-shop-results.md) scores 21 findings against the
-app's own documented challenges (precision 1.0000, recall 0.7750 over 40 challenges in 10 files) and
-exercises the LLM/prompt-injection surface. That pass is explicitly **not** blind and says so.
+causes. All eight traced to three named assumption failures rather than to dataflow tracing.
+
+**v7.0** wrote those three lessons into the catalog and the Phase 5 self-verify step, then re-tested
+on [64 fresh cases](validation/owasp-benchmark-results.md) drawn with zero overlap against every prior
+sample (40 Java + 24 Python, all correct). That run is a **targeted regression test, not a new
+accuracy claim**: its categories were chosen precisely because the errors were there, so it is not
+comparable to the 0.9358 above, which remains the baseline. What it establishes is narrower and
+checkable — on 11 cases carrying the three trap shapes, none of the errors recurred, and the four
+genuine wrapper-sourced cases were not over-corrected into false negatives.
+
+The [Juice Shop passes](validation/juice-shop-results.md) score findings against the app's own
+documented challenges. Both are kept:
+
+| Juice Shop pass | Scope | Precision | Recall | Blind? |
+|---|---|---|---|---|
+| **10 route modules (2026-07-20)** | 12 challenges | 1.0000 | **0.9167** | **Yes** — scope drawn before any marker was read |
+| 10 files (2026-07-19) | 40 challenges | 1.0000 | 0.7750 | No — answer key derived first; says so |
+
+The v7.0 pass also produced 7 real findings Juice Shop's own challenge list does not track, and six of
+its ten drawn files carried no documented vulnerability at all — inducing no false positives, which is
+the failure mode a blind scope exists to expose. The 2026-07-19 pass remains the one that exercises
+the LLM/prompt-injection surface.
 
 ---
 
@@ -277,9 +297,17 @@ sentinel/
   generators, and Semgrep scanned all 208 files in seconds where these verdicts were produced by hand.
   Benchmark is also synthetic: its decoys are deliberate and its shapes repeat, so a good score there
   does not transfer automatically to messy real code.
-- **The Juice Shop pass is a coverage measure, not a detection test.** Its answer key was derived from
-  the app's own markers *before* the audit, so its recall is not comparable to the blind Benchmark
-  figures. [It says so at the top.](validation/juice-shop-results.md)
+- **The Juice Shop passes are coverage measures, not detection tests.** The 2026-07-19 pass derived its
+  answer key from the app's own markers *before* the audit, so its 0.7750 recall is not comparable to
+  the blind Benchmark figures. The 2026-07-20 pass fixed the ordering — scope drawn before any marker
+  was read — but two limits remain: Juice Shop inlines its `solveIf(challenges.<key>)` detection, so
+  challenge *names* are visible while reading a file, and 12 documented challenges is a small
+  denominator where one judgement call moves recall by 8 points.
+  [Both say so.](validation/juice-shop-results.md)
+- **The v7.0 64-case Benchmark re-test is a regression test, not an accuracy estimate.** Its sample is
+  deliberately concentrated in the categories where the v6.0 errors occurred, and the traps were known
+  going in — it measures whether encoded guidance is applied on unseen code, not whether a cold
+  auditor would rediscover them. The 208-case F1 of 0.9358 remains the figure to quote.
 - **Regression audit needs history.** Phase 4 is only as sharp as the commit history available; without
   it, the phase runs as a static pass and says so.
 

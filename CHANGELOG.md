@@ -8,6 +8,101 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0] — 2026-07-20
+
+**The corrections become checks.** 6.0.0's most valuable output was not its bigger sample — it was
+catching that a perfect score was a small-sample artifact and naming the three assumption failures
+behind all eight of its errors. Those findings lived in a results file, where they improved nothing.
+This release writes them into the catalog, the Phase 3 scan, and the Phase 5 self-verify step, then
+tests whether that changed any verdicts on cases nobody had scored.
+
+No phase, rubric, schema, or check changed. The six phases (0–5), STRIDE core, severity and confidence
+rubrics, evidence standard, prose report template, findings schema, standards-currency check, and the
+`security-audit` skill name are all untouched. Every change below is additive.
+
+### Added
+- **Catalog: a cross-cutting "Before you assert taint — evaluating a source" section**
+  (`skill/references/vulnerability-catalog.md`), placed ahead of the class entries because it applies
+  to all of them. Two checks, both drawn from real 6.0.0 errors:
+  - *Open the helper before trusting its name.* A value arriving via a wrapper or utility method is
+    not a verified source until that method's body is read. A getter-shaped name may return a
+    constant, a config value, or a fixed test string, and it will sit beside genuine sources with an
+    identical signature. Five of the eight 6.0.0 errors were this exact shape.
+  - *Check whether the route or URL segment is statically registered.* Route-derived segments are
+    request data, but their reachable values are pinned by how the handler is registered; a handler
+    bound to a fixed literal route reaches a given segment with exactly one possible value. One
+    6.0.0 error was this.
+- **Catalog: `envp` and environment-driven execution under SENT-INJ-01.** Taint reaching a child
+  process's environment — `Runtime.exec`'s `envp`, `subprocess`'s `env=`, an `env` object passed to
+  `spawn`/`execFile` — is a genuine execution primitive (`LD_PRELOAD`, `IFS`, `PATH`,
+  `PYTHONPATH`, `BASH_ENV`), not a lesser issue. Two 6.0.0 false negatives came from ruling this out
+  because the taint was not in the command string. Mirrored in the Phase 3 section B injection line
+  of `SKILL.md`.
+- **`SKILL.md` Phase 5: a "Verify the source, not just the flow" self-verify step.** The most common
+  way a well-traced finding turns out wrong is that its premise was never checked. Applying the
+  discipline to one helper and skipping it on the next is how it fails in practice — 6.0.0 opened
+  `Thing1.doSomething` and confirmed it, then assumed `getTheValue` in the same pass.
+- **`SKILL.md` Operating Principles: "One sink found is not the file finished."** Read every file and
+  function to its end and look for co-located but distinct issues; vibe-coded files concentrate
+  defects rather than spreading them evenly, so the highest-yield place to find the second finding is
+  the file that produced the first.
+- **Targeted re-test on 64 fresh Benchmark cases** (`validation/owasp-benchmark-results.md`, new dated
+  section; the 66-case and 208-case runs are preserved above it). 40 Java + 24 Python, drawn with a
+  new seed and **zero overlap** with any prior sample, verified by set intersection.
+  - Results: **40/40 Java and 24/24 Python correct** (P 1.0000 / R 1.0000 / F1 1.0000 on each).
+  - **This is a regression test, not an accuracy estimate, and is not comparable to the 208-case
+    F1 of 0.9358** — the categories were chosen *because* the errors were there, and the traps were
+    known going in. The results file states both limits explicitly and the 0.9358 baseline stands
+    unchanged. The per-trap table is the meaningful result: 4 decoy-helper cases correctly cleared,
+    5 genuine wrapper-sourced cases correctly kept (no overcorrection), 1 tainted-`envp` case
+    correctly reported, 2 statically-bound route cases correctly cleared.
+- **Blind Juice Shop pass — 10 fresh route modules** (`validation/juice-shop-results.md`, new dated
+  section; both earlier passes preserved). Closes the gap the 6.0.0 pass flagged against itself.
+  - Scope drawn seed-fixed from `routes/*.ts` **before any marker, `solveIf`, or `challenges.yml`
+    entry was read**. **Precision 1.0000, recall 0.9167, F1 0.9565** over 12 documented challenges,
+    plus **7 real findings the challenge list does not track** (unauthenticated full-config
+    disclosure, a key-directory traversal and its browsable index, a CAPTCHA that returns its own
+    answer and is replayable, a fail-open wallet check, a swallowed image-write failure).
+  - Six of the ten drawn files carried no documented challenge and induced **no false positives** —
+    the failure mode a blind scope exists to expose.
+  - The single miss (`redirectCryptoCurrencyChallenge`) was **left unclaimed deliberately**: it is
+    solved by redirecting to an address already on the allowlist, which is intended behaviour, and
+    attaching it to the open-redirect finding for a free 12/12 would have relabelled a discovery
+    challenge as a vulnerability.
+- **`login.ts` / `user.ts` end-to-end re-read**, testing the new operating principle against the
+  files 6.0.0 under-covered: **5/14 → 13/13, recovering all nine previously missed challenges.**
+  `login.ts`'s eight misses all sit *below* its first sink (seven hardcoded credential pairs in
+  `verifyPreLoginChallenges`, including a test credential and an OAuth password that is the base64 of
+  its own reversed email). `user.ts`'s sits *above* its reported sink, inside a `vuln-code-snippet
+  hide-start`/`hide-end` block — so the rule is **read the whole scope**, not "keep reading downward".
+- **`validation/run_comparator.py`** — comparison scanners now run in a disposable virtualenv.
+
+### Changed
+- **`validation/sample_benchmark.py` grows `--exclude` and `--categories`**, so a new draw can be
+  proven disjoint from every previous one rather than assumed to be. `--exclude` reads only the
+  `test_name` column of prior samples, preserving blindness.
+- **Comparison runs no longer touch the system Python environment.** Installing Semgrep for the 5.0.0
+  and 6.0.0 comparisons downgraded `mcp`, `jsonschema`, and `opentelemetry-api` in the active
+  environment both times, and both times it was undone by hand afterwards. `run_comparator.py`
+  installs the pinned tool into a throwaway venv, invokes it from that interpreter, and removes the
+  tree in a `finally` block; `--verify-isolation` compares host package versions before and after and
+  exits non-zero if any moved. Verified by actually installing `semgrep==1.170.0` — the same version
+  responsible for both incidents — and confirming `mcp==1.26.0` and `jsonschema==4.26.0` unchanged,
+  `semgrep` absent from the host, and no temp directory left behind. Documented in
+  `validation/owasp-benchmark-results.md`.
+- Validation harness tests: 15 → 25, covering the sampler's exclusion/category logic and the
+  comparator's isolation helpers.
+
+### Unchanged
+- The six phases, the STRIDE core, the severity and confidence rubrics, the four-part evidence
+  standard, the prose report template, the Plain-English brief, `schema/finding.schema.json`
+  (`schema_version` 1.0), the standards-currency check, all 45 `SENT-*` classes, and the
+  `security-audit` skill name.
+- **The 208-case Benchmark record and the original 10-file Juice Shop pass are preserved verbatim**,
+  with their own dates and their own caveats. The 0.9358 F1 remains the project's cold-performance
+  baseline; nothing in this release supersedes it.
+- The three redacted example reports.
+
 ## [6.0.0] — 2026-07-19
 
 **Validation at scale, and a corrected headline.** This release is entirely about evidence: it scales
