@@ -47,6 +47,8 @@ import re
 import sys
 from pathlib import Path
 
+from harness_guard import CaseCountMismatch, require_clean_names, require_count
+
 SKIP_PREFIX = ("node_modules", "build/", "dist/", ".git/", "data/static/codefixes")
 MARKER_RE = re.compile(r"vuln-code-snippet start ([ \t\w]+)")
 SOLVE_RE = re.compile(r"(?:solveIf|solve)\s*\(\s*challenges\.(\w+)")
@@ -101,6 +103,24 @@ def main() -> int:
     answer_key = build_answer_key(args.juice_shop_root, valid)
     report = json.loads(args.findings.read_text(encoding="utf-8"))
     scope = report["scope_files"]
+
+    # A scope path that does not resolve is the v7.0 failure mode: the audit
+    # claims to have covered a file that was never there, and every challenge in
+    # it scores as a clean miss instead of an error. Resolve before scoring.
+    try:
+        require_clean_names(scope, f"{args.findings.name}:scope_files")
+        resolved = [f for f in scope if (args.juice_shop_root / f).is_file()]
+        if len(resolved) != len(scope):
+            missing = sorted(set(scope) - set(resolved))
+            raise CaseCountMismatch(
+                f"{args.findings.name}: {len(missing)} scope file(s) do not exist under "
+                f"{args.juice_shop_root}: {', '.join(missing[:10])}. An audited file that "
+                f"is not on disk was never read; its challenges must not score as misses."
+            )
+        require_count(len(resolved), len(scope), f"scoping {args.findings.name}")
+    except CaseCountMismatch as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
     in_scope: set[str] = set()
     per_file: dict[str, set[str]] = {}

@@ -37,6 +37,8 @@ import re
 import sys
 from pathlib import Path
 
+from harness_guard import CaseCountMismatch, require_clean_names, require_exact_cases
+
 TEST_NAME_RE = re.compile(r"(BenchmarkTest\d+)\.py$")
 
 CONVENTIONS = {
@@ -96,6 +98,19 @@ def main() -> int:
         print(f"error: report covers cases not in the sample: {sorted(unknown)}", file=sys.stderr)
         return 1
 
+    # The sample CSV is the contract: every name in it must be a real, clean case
+    # id, and the converter must emit a verdict for each. A truncated or
+    # line-ending-mangled sample otherwise yields a short verdict file that scores
+    # without complaint.
+    try:
+        require_clean_names([name for name, _ in sample], str(args.sample))
+        require_clean_names(
+            [i["filename"] for i in report["results"]], f"{args.report.name}:results"
+        )
+    except CaseCountMismatch as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
     keep = CONVENTIONS[args.convention]
     verdicts, annotated = [], []
     for name, category in sample:
@@ -110,6 +125,16 @@ def main() -> int:
                 "reason": ("rules fired: " + ", ".join(rules)) if rules else "no rule fired",
             }
         )
+
+    try:
+        require_exact_cases(
+            [v["test_name"] for v in verdicts],
+            [name for name, _ in sample],
+            f"converting {args.report.name}",
+        )
+    except CaseCountMismatch as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
     args.out.write_text(json.dumps(verdicts, indent=2) + "\n", encoding="utf-8")
     flagged = sum(1 for v in verdicts if v["vulnerable"])

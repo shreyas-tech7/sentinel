@@ -31,6 +31,14 @@ import json
 import sys
 from pathlib import Path
 
+from harness_guard import CaseCountMismatch, require_clean_names, require_exact_cases
+
+
+def load_sample_names(path: Path) -> list[str]:
+    """Return the test names a run was asked to score, from its sample CSV."""
+    with path.open(encoding="utf-8", newline="") as fh:
+        return [row["test_name"] for row in csv.DictReader(fh)]
+
 
 def find_expected_csv(benchmark_root: Path, explicit: Path | None = None) -> Path:
     """Locate the expected-results CSV inside a Benchmark checkout.
@@ -161,10 +169,29 @@ def main() -> int:
         default=None,
         help="ground-truth CSV; auto-discovered inside --benchmark-root when omitted",
     )
+    parser.add_argument(
+        "--sample",
+        type=Path,
+        default=None,
+        help="the sample CSV this run was drawn from; when given, the verdict set "
+        "must match it exactly or scoring aborts. Prefer passing it: without it a "
+        "run that silently dropped cases still produces a plausible-looking table",
+    )
     args = parser.parse_args()
 
     truth = load_truth(find_expected_csv(args.benchmark_root, args.expected_csv))
     verdicts = load_verdicts(args.verdicts)
+
+    try:
+        require_clean_names(verdicts, str(args.verdicts))
+        if args.sample is not None:
+            asked = load_sample_names(args.sample)
+            require_clean_names(asked, str(args.sample))
+            require_exact_cases(verdicts, asked, f"scoring {args.verdicts.name}")
+    except CaseCountMismatch as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
     counts = score(truth, verdicts)
 
     if args.markdown:
