@@ -795,3 +795,186 @@ this section transfers to a claim about production repositories.
   same under the `medium-plus` convention.
 - `validation/bandit_to_verdicts.py` — the converter, including its refusal to score a report that
   contains file errors.
+
+---
+
+# Broad blind resample — 204 fresh cases across both suites (2026-07-21)
+
+## Why this run exists
+
+Everything scored since v6.0 was either **superseded-but-broad** (the original 208-case run) or
+**deliberately concentrated** on known trap categories (the v7.0 64-case regression test). Neither
+answers the open question: did the v7.0 catalog fix move the *general* F1, or only the trap-specific
+one? A concentrated retest cannot answer that — it is selected on the thing being measured.
+
+This is that measurement: a fresh, broad, stratified, unconcentrated draw, excluding every case
+scored in any previous round.
+
+## Method
+
+```bash
+python validation/sample_benchmark.py --benchmark-root ../BenchmarkJava \
+    --per-category 10 --seed 909 --out validation/data/benchmark-sample-java-v9.csv \
+    --exclude validation/data/benchmark-sample.csv \
+              validation/data/benchmark-sample-java-v6.csv \
+              validation/data/benchmark-sample-java-v7.csv
+
+python validation/sample_benchmark.py --benchmark-root ../BenchmarkPython \
+    --per-category 7 --seed 909 --out validation/data/benchmark-sample-python-v9.csv \
+    --exclude validation/data/benchmark-sample-python-v6.csv \
+              validation/data/benchmark-sample-python-v7.csv
+```
+
+The sampler excluded 204 previously drawn Java cases and 122 Python. Overlap with prior samples was
+verified as **zero, per suite** — the two suites reuse the same `BenchmarkTestNNNNN` names, so a
+naive check that merges both namespaces reports 16 phantom collisions. Checked per suite, both are 0.
+
+**Python drew 94, not 98.** The `sqli` category yielded 3 rather than 7: the Python suite contains
+only 16 sqli cases total and 13 were consumed by the v6/v7 samples. Genuine exhaustion of a small
+category, not a sampler fault.
+
+Scoring ran through the **hardened harness** (see CHANGELOG 9.0.0), with `--sample` passed so the
+verdict set was checked against the drawn case list rather than merely being counted.
+
+## Results — Java, 110 cases
+
+| Category | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| cmdi | 10 | 5 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| crypto | 10 | 7 | 0 | 0 | 3 | 1.0000 | 1.0000 | 1.0000 |
+| hash | 10 | 8 | 0 | 0 | 2 | 1.0000 | 1.0000 | 1.0000 |
+| ldapi | 10 | 5 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| pathtraver | 10 | 2 | 0 | 0 | 8 | 1.0000 | 1.0000 | 1.0000 |
+| securecookie | 10 | 5 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| sqli | 10 | 5 | 0 | 0 | 5 | 1.0000 | 1.0000 | 1.0000 |
+| trustbound | 10 | 6 | 0 | 0 | 4 | 1.0000 | 1.0000 | 1.0000 |
+| weakrand | 10 | 4 | 0 | 0 | 6 | 1.0000 | 1.0000 | 1.0000 |
+| xpathi | 10 | 6 | 0 | 0 | 4 | 1.0000 | 1.0000 | 1.0000 |
+| xss | 10 | 4 | 0 | 0 | 6 | 1.0000 | 1.0000 | 1.0000 |
+| **all (SENTINEL Java v9)** | 110 | 57 | 0 | 0 | 53 | 1.0000 | 1.0000 | 1.0000 |
+
+## Results — Python, 94 cases
+
+| Category | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| cmdi | 7 | 2 | 1 | 0 | 4 | 0.6667 | 1.0000 | 0.8000 |
+| codeinj | 7 | 4 | 0 | 0 | 3 | 1.0000 | 1.0000 | 1.0000 |
+| deserialization | 7 | 1 | 0 | 0 | 6 | 1.0000 | 1.0000 | 1.0000 |
+| hash | 7 | 4 | 0 | 0 | 3 | 1.0000 | 1.0000 | 1.0000 |
+| ldapi | 7 | 4 | 0 | 0 | 3 | 1.0000 | 1.0000 | 1.0000 |
+| pathtraver | 7 | 4 | 0 | 0 | 3 | 1.0000 | 1.0000 | 1.0000 |
+| redirect | 7 | 3 | 0 | 0 | 4 | 1.0000 | 1.0000 | 1.0000 |
+| securecookie | 7 | 5 | 0 | 0 | 2 | 1.0000 | 1.0000 | 1.0000 |
+| sqli | 3 | 3 | 0 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
+| trustbound | 7 | 2 | 1 | 0 | 4 | 0.6667 | 1.0000 | 0.8000 |
+| weakrand | 7 | 4 | 0 | 0 | 3 | 1.0000 | 1.0000 | 1.0000 |
+| xpathi | 7 | 1 | 0 | 0 | 6 | 1.0000 | 1.0000 | 1.0000 |
+| xss | 7 | 0 | 1 | 0 | 6 | 0.0000 | n/a | n/a |
+| xxe | 7 | 0 | 0 | 0 | 7 | n/a | n/a | n/a |
+| **all (SENTINEL Python v9)** | 94 | 37 | 3 | 0 | 54 | 0.9250 | 1.0000 | 0.9610 |
+
+## Combined, and against the prior record
+
+| Run | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| **v9 broad resample (combined)** | 204 | 94 | 3 | 0 | 107 | 0.9691 | 1.0000 | **0.9843** |
+| v9 broad resample — Java only | 110 | 57 | 0 | 0 | 53 | 1.0000 | 1.0000 | 1.0000 |
+| v9 broad resample — Python only | 94 | 37 | 3 | 0 | 54 | 0.9250 | 1.0000 | 0.9610 |
+| v6 baseline — Java, 110-case (broad) | 110 | — | 5 | 2 | — | — | — | 0.9358 |
+| v7 targeted retest — 64 trap-category cases | 64 | — | — | — | — | — | — | (see the v7 section above) |
+
+**Read the three v9-vs-prior rows as different questions.** The v6 Java 110-case row is the broad
+cold baseline. The v7 64-case row is a concentrated retest of known-trap categories and is *not* a
+general accuracy estimate. This v9 row is the first broad, unconcentrated draw since the catalog fix.
+
+## The honest caveat on the Java 1.0000
+
+**A perfect score on 110 cases is not evidence that SENTINEL is perfect, and it must not be quoted as
+one.** The v6 run's Java figure of 0.9358 remains the better estimate of *cold* accuracy, for a reason
+visible in this session's own working notes.
+
+Before scoring, the audit read the Benchmark's helper classes — `ThingFactory`/`Thing2`,
+`SeparateClassRequest`, `Utils.getCipher()`, `benchmark.properties`, `separate_request.py` — and
+derived the suite's vocabulary of roughly a dozen transform idioms: the `map[keyB]`-then-`[keyA]`
+overwrite, the `valuesList.remove(0)` index shift, the `(7*42)-num > 200` constant branch, the
+propagator chain ending in a static string, the Base64 round-trip identity, the `charAt(n)` switch
+selector. Once that vocabulary is known, most of the suite becomes mechanical pattern recognition
+rather than analysis.
+
+That is a **learning effect on the corpus, not a capability gain**. The Benchmark is a synthetic
+corpus of constructed puzzles built from a small set of templates — precisely the structure that
+rewards vocabulary acquisition. A production repository does not reuse twelve idioms across 2,740
+files. Read the Java 1.0000 as "the template vocabulary was fully learned on this suite," and read
+the Python 0.9610 — scored against a suite whose idioms overlap but are not identical — as the more
+informative number in this run.
+
+## The three false positives share one root cause
+
+All three Python FPs (`BenchmarkTest01098` cmdi, `BenchmarkTest01092` trustbound,
+`BenchmarkTest01003` xss) use the same source expression:
+
+```python
+parts = request.path.split("/")
+param = parts[1]
+```
+
+This was read as a taint source. It is not. Every one of these handlers is bound to a **fully static
+route literal**:
+
+```python
+@app.route('/benchmark/cmdi-00/BenchmarkTest01098', methods=['POST'])
+```
+
+Flask dispatches to the handler only on an exact path match, so `request.path` is invariant and
+`split("/")[1]` is always the constant `'benchmark'`. Nothing attacker-controlled reaches index 1.
+
+**The error was reading the source expression without resolving which route segment the index lands
+on.** A framework request attribute is not automatically tainted: `request.path` under a static route
+is a constant, and it becomes a source only when the route carries a `<converter>` segment *and* the
+index selects that segment. Zero false negatives in the whole run, and every false positive traceable
+to this one mistake — the failure mode is over-trusting the *name* of a request attribute.
+
+## Two near-misses caught during the audit itself
+
+Both were caught by verification, not by the harness — the same pattern v9.0's guards exist to change.
+
+1. **A "safe source" that reads like a real one.** `SeparateClassRequest.getTheValue()` (Java) and
+   `request_wrapper.get_safe_value()` (Python) both **return the constant `"bar"`** and ignore the
+   request entirely. Eight Java cases in this sample call `getTheValue`. Three had *already been
+   written down as vulnerable* before the Python suite's more self-documenting method name prompted a
+   check of its Java counterpart; `BenchmarkTest00861` (ldapi), `BenchmarkTest00923` (trustbound) and
+   `BenchmarkTest02694` (xss) were corrected to safe. The other five were already correct for
+   independent reasons — algorithm-based verdicts, or a constant branch upstream. **Uncorrected, this
+   would have been 3 additional false positives** and a Java F1 near 0.9744 rather than 1.0000.
+
+2. **Interleaved output produced a wrong reading.** A truncated terminal view spliced
+   `BenchmarkTest01756`'s header onto `BenchmarkTest01831`'s transform body, which briefly made 01756
+   look like a Base64 identity flow. Re-rendering the two cases separately showed 01756 is the
+   `num = 86` constant branch (safe) and 01831 is the Base64 flow (vulnerable). **A rendering artifact
+   is a data-integrity bug**, and the lesson is the harness guards' own: never score off a view that
+   might be truncated.
+
+## On the two zero-positive categories
+
+`xxe` returned 0 TP / 0 FP / 7 TN, and Python `xss` returned 0 TP. Both were re-checked rather than
+accepted, since an all-negative category is exactly the shape a silent failure takes.
+
+For `xxe`, the two conditions the vulnerability requires are **perfectly anti-correlated in this
+draw**: the three cases that enable external entities
+(`parser.setFeature(xml.sax.handler.feature_external_ges, True)`) all parse a constant value, and the
+three that parse tainted input all leave external entities disabled (Python's default since 3.7.1).
+The seventh is safe on both counts. Verified twice by two different methods. It is a real property of
+this sample, not a scoring failure — but at 7 cases it carries no statistical weight, and no claim
+about `xxe` performance is made from it.
+
+## Files
+
+- `validation/data/benchmark-sample-java-v9.csv` / `...-python-v9.csv` — the drawn samples.
+- `validation/data/sentinel-benchmark-java-v9-verdicts.json` / `...-python-v9-verdicts.json` — the
+  blind per-case verdicts scored above.
+
+## Scope, unchanged
+
+The Benchmark is a synthetic corpus. These figures measure taint-tracing on constructed puzzles built
+from a small template vocabulary, and **do not transfer to a claim about production code**. The
+learning-effect caveat above is part of that limit, not separate from it.
