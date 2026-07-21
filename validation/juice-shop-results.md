@@ -366,3 +366,159 @@ miss came from failing to trace a dataflow. Every one came from not opening some
 - `validation/data/juice-shop-v6-findings.json` — the 21 findings with full evidence-standard fields
   and their challenge mappings.
 - `validation/score_juiceshop.py` — derives the answer key from the target and scores against it.
+
+---
+
+# Blind pass — 10 fresh route modules (2026-07-20)
+
+**This section extends the two passes above; both stand as recorded.** It closes the gap the previous
+section flagged against itself: that pass was scored honestly but **was not blind**, because its file
+list was chosen after reading the `vuln-code-snippet` markers. This one fixes the ordering.
+
+**Date produced:** 2026-07-20
+**Target:** OWASP Juice Shop v20.1.1, commit `33518f5` — the same clone and commit as the 10-file pass.
+**Method:** SENTINEL Phases 0–3 by hand over 10 route modules, 526 lines. Static-analysis-only: the
+app was never started, called, or attacked.
+
+## How the scope was chosen — and what "blind" means here
+
+The 10 files were drawn by a seed-fixed random sample over `routes/*.ts`, excluding the four route
+modules already audited, **before any marker, `solveIf` call, or `challenges.yml` entry was read**:
+
+```python
+files = sorted(f for f in os.listdir('routes') if f.endswith('.ts')
+               and f not in {'login.ts', 'search.ts', 'updateProductReviews.ts', 'chat.ts'})
+random.Random(7).sample(files, 10)     # 57 candidates -> 10 drawn
+```
+
+`appConfiguration.ts`, `appVersion.ts`, `b2bOrder.ts`, `captcha.ts`, `deluxe.ts`, `fileUpload.ts`,
+`keyServer.ts`, `payment.ts`, `profileImageFileUpload.ts`, `redirect.ts`. Six of the ten turned out to
+carry no documented challenge at all — which is the point: a marker-chosen scope cannot produce that
+distribution, and auditing files that have nothing wrong with them is where false positives come from.
+
+Every finding was written from the code, and challenge keys were mapped afterwards. **Two honest
+limits on the word "blind":**
+
+- Juice Shop inlines its detection logic, so `solveIf(challenges.<key>)` calls are visible while
+  reading a file. Scope selection and finding formation were blind to the answer key; the *names* of
+  some challenges were not, because they sit in the source being audited. This is unavoidable in this
+  target short of stripping the calls, which would change the code under audit.
+- `b2bOrder.ts` overlaps the earlier five-finding slice at the top of this document, which reported
+  the same `orderLinesData` RCE. It was drawn by the sampler and is kept rather than swapped out, but
+  its two challenges are not new ground and should be read as such.
+
+## Results (2026-07-20)
+
+| File | Documented challenges | Found | Missed |
+|---|---|---|---|
+| `routes/appConfiguration.ts` | 0 | 0 | - |
+| `routes/appVersion.ts` | 0 | 0 | - |
+| `routes/b2bOrder.ts` | 2 | 2 | - |
+| `routes/captcha.ts` | 0 | 0 | - |
+| `routes/deluxe.ts` | 1 | 1 | - |
+| `routes/fileUpload.ts` | 7 | 7 | - |
+| `routes/keyServer.ts` | 0 | 0 | - |
+| `routes/payment.ts` | 0 | 0 | - |
+| `routes/profileImageFileUpload.ts` | 0 | 0 | - |
+| `routes/redirect.ts` | 2 | 1 | redirectCryptoCurrencyChallenge |
+| **total** | **12** | **11** | **1** |
+
+| Metric | Value |
+|---|---|
+| True positives | 11 |
+| False positives | 0 |
+| False negatives | 1 |
+| Precision | 1.0000 |
+| Recall | 0.9167 |
+| F1 | 0.9565 |
+| Findings outside the documented set (unscored) | 7 |
+
+The 14 findings, each with source · sink · missing control · falsifier, are in
+[`data/juice-shop-v7-findings.json`](data/juice-shop-v7-findings.json).
+
+### The one miss, and why it was left as a miss
+
+`redirectCryptoCurrencyChallenge` is documented in `routes/redirect.ts` and was **not** claimed. The
+substring-containment flaw in `isRedirectAllowed` was found and reported (`JS7-04`,
+covering `redirectChallenge`), and it would have been easy to attach this second key to the same
+finding and score 12/12. It was not, because that challenge is solved by redirecting to one of the
+three cryptocurrency addresses **already on the allowlist** — intended behaviour of a working
+allowlist, not a weakness in it. Claiming it would have inflated recall by relabelling a discovery
+challenge as a vulnerability. The 0.9167 is the honest number.
+
+### The seven unscored findings
+
+Six of the ten files carry no documented challenge, and five of the seven findings with no challenge
+key came from them — real issues Juice Shop's own list does not track:
+
+- **`appConfiguration.ts`** — `GET /rest/admin/application-configuration` returns the entire resolved
+  config object with a **one-key denylist** (`chatBot.llmApiUrl`), and the `admin` path segment is
+  naming only: `server.ts:607` registers it with no authorization middleware at all.
+- **`keyServer.ts`** — `params.file` is guarded by `!file.includes('/')`, a single-character denylist
+  over the raw input rather than a containment check on the resolved path; backslash is not covered.
+  Separately, `server.ts:277` mounts a browsable index over the key directory.
+- **`captcha.ts`** — the endpoint returns the CAPTCHA's `answer` in the same JSON body as the
+  challenge, and records are never invalidated after a successful verify, so a solved pair is
+  replayable and `captchaId` is a sequential counter.
+- **`deluxe.ts`** — the wallet balance guard is `if ((wallet != null) && wallet.balance < 49)`, which
+  falls through to the decrement branch when no wallet row exists. Reported separately from the
+  `freeDeluxeChallenge` finding because it bites even on a legitimate `paymentMode`.
+- **`profileImageFileUpload.ts`** — the `fs.writeFile` failure path only calls `logger.warn`, then
+  execution continues and updates the user record to point at a file that was never written.
+
+Precision is scored only against the documented set, so these neither help nor hurt it.
+
+## Did "keep scanning" change the outcome? — `login.ts` and `user.ts` re-read
+
+Separate from the blind pass, the two files the v6.0 pass under-covered were re-read end to end to
+test the v7.0 operating principle directly. This is **not** blind and is not presented as a detection
+result — the files were chosen *because* they had known misses. It answers one question: does reading
+the whole scope recover them?
+
+| File | Documented | v6.0 found | v7.0 found |
+|---|---|---|---|
+| `routes/login.ts` | 12 | 4 | **12** |
+| `models/user.ts` | 2 | 1 | **2** |
+| **total** | **13** | **5** | **13** |
+
+**All nine previously missed challenges were recovered**, and the reason is exactly what the principle
+predicts — in both files the misses were outside the neighbourhood of the sink that was reported:
+
+- **`login.ts`** — the first sink is the SQL injection on line 34. Every one of the eight misses lives
+  *below* it: seven hardcoded credential pairs in `verifyPreLoginChallenges` (lines 58–66, including
+  `admin123`, a test credential, and an OAuth password that is the base64 of the account's own
+  reversed email), plus the ghost-login and ephemeral-accountant conditions in
+  `verifyPostLoginChallenges` (lines 72–81). A pass that stops at the injection sees none of it. This
+  is the hardcoded-credentials finding the v6.0 error analysis named.
+- **`user.ts`** — the same defect in the opposite direction. The reported MD5 sink is line 76; the
+  missed stored-XSS is *above* it, at lines 44–72, where the `username` and `email` setters branch on
+  a runtime flag and substitute `sanitizeLegacy` for `sanitizeSecure` — or skip sanitization entirely
+  on the email path. Those lines sit inside a `vuln-code-snippet hide-start` / `hide-end` block, so
+  the file's own annotations actively steer a marker-following reader around them.
+
+That second case is worth stating plainly because it sharpens the principle: the rule is not "keep
+reading downward from the sink", it is **read the whole scope** — defects cluster in a defective file
+in both directions, and in this instance the target's own markers were the thing hiding one.
+
+## What this does and does not establish
+
+- **This pass is blind in scope selection and finding formation**, which the previous one was not, and
+  its recall (0.9167) is therefore a fairer coverage figure than the 0.7750 above — but see the two
+  limits on "blind" stated earlier before treating it as a clean detection rate.
+- **Precision 1.0000 over 14 findings, on a scope where 6 of 10 files had nothing documented.** No
+  challenge was claimed that was not real and in the right file, and the empty files did not induce
+  invented findings — which is the specific failure mode a blind scope is designed to expose.
+- **12 documented challenges is a small denominator.** One judgement call on
+  `redirectCryptoCurrencyChallenge` moves recall by 8 points. Treat the figure as directional.
+- **The `login.ts`/`user.ts` re-read is a regression test, not evidence of general recall.** It shows
+  the principle recovers known misses when applied to the files those misses came from. It cannot show
+  the principle would have found them cold.
+- **Still static-only.** Nothing was executed. Reachability of the traversal in `keyServer.ts` on a
+  Linux deployment, and whether the `encryptionkeys` directory holds live private material in a given
+  deployment, are runtime questions this pass deliberately does not answer — both are stated as
+  Medium confidence with their falsifiers named.
+
+## Files
+
+- `validation/data/juice-shop-v7-findings.json` — the 14 blind-pass findings.
+- `validation/data/juice-shop-v7-rescan-findings.json` — the 6 `login.ts` / `user.ts` re-read findings.

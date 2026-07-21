@@ -1,0 +1,101 @@
+{
+ "_about": "SENTINEL v7.0 targeted re-read of the two files the v6.0 pass under-covered. Not a blind pass and not presented as one: these files were chosen precisely because v6.0 missed 9 documented challenges in them (8 in login.ts, 1 in user.ts). The question this scores is narrow -- does the v7.0 'one sink found is not the file finished' operating principle recover them when the same files are read end to end? Compare against the v6.0 per-file rows in validation/juice-shop-results.md.",
+ "target": "OWASP Juice Shop v20.1.1, commit 33518f5",
+ "date": "2026-07-20",
+ "scope_files": [
+  "routes/login.ts",
+  "models/user.ts"
+ ],
+ "findings": [
+  {
+   "id": "JS7R-01",
+   "title": "SQL injection in the login query",
+   "severity": "Critical",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/login.ts:34 - login()",
+   "covers": [
+    "loginAdminChallenge",
+    "loginBenderChallenge",
+    "loginJimChallenge"
+   ],
+   "analysis": "req.body.email is interpolated directly into a raw sequelize.query template string. The password side is hashed before interpolation, which constrains it, but the email side is unconstrained attacker input inside a single-quoted SQL literal. Terminating the quote and commenting out the remainder authenticates as any chosen account without a password. Re-confirmed from the v6.0 pass; restated here because the findings below depend on this sink being reachable.",
+   "missing_control": "A parameterized query or ORM finder with bound values.",
+   "falsifier": "Any binding of req.body.email as a parameter rather than string interpolation. Line 34 concatenates it directly."
+  },
+  {
+   "id": "JS7R-02",
+   "title": "Seven sets of account credentials hardcoded in the login route's challenge helpers",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "C",
+   "location": "routes/login.ts:58-66 - verifyPreLoginChallenges",
+   "covers": [
+    "weakPasswordChallenge",
+    "loginSupportChallenge",
+    "loginRapperChallenge",
+    "loginAmyChallenge",
+    "dlpPasswordSprayingChallenge",
+    "oauthUserPasswordChallenge",
+    "exposedCredentialsChallenge"
+   ],
+   "analysis": "verifyPreLoginChallenges compares req.body.email and req.body.password against seven literal credential pairs written into the source: admin/'admin123', support/'J6aVjTgOpRs@?5l!Zkq2AYnCE@RF$P', mc.safesearch/'Mr. N00dles', amy/'K1f.....................', J12934/'0Y8rMnww$*9VFYE§59-!Fg1L6t&6lB', an OAuth account whose password is the base64 of its own reversed email address, and testing/'IamUsedForTesting'. These are live account passwords committed to the repository -- anyone reading the file authenticates as any of those users without touching the SQL injection above. Several are independently weak (a nine-character common password, a derived-from-username value, a test credential in production code), and the derived OAuth password means knowing the email is sufficient to compute the password. THIS IS THE FINDING THE v6.0 PASS MISSED: the file's first sink is the SQL injection on line 34, and every one of these sits below it, in helper functions the earlier pass stopped short of.",
+   "missing_control": "No credential should be a source literal. These belong in seeded fixture data with generated values, and the weak/derived ones should not exist at any strength.",
+   "falsifier": "Evidence that these strings are test doubles never provisioned as real accounts. They are not -- the same addresses are seeded users, and the comparisons here run against live login input."
+  },
+  {
+   "id": "JS7R-03",
+   "title": "Soft-deleted accounts remain authenticable because the deletion filter lives in the injectable query",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "A",
+   "location": "routes/login.ts:34 with :72 - login() / verifyPostLoginChallenges",
+   "covers": [
+    "ghostLoginChallenge"
+   ],
+   "analysis": "Account deletion is soft (the model is paranoid: true, models/user.ts:123), and the only thing excluding deleted users from login is the trailing AND deletedAt IS NULL inside the interpolated query on line 34. Because the email side of that same query is injectable, the filter is attacker-removable: a payload that closes the literal and comments out the tail drops the deletion check along with the password check. The post-login helper's solveIf for a specific deleted user's id confirms the state is reachable rather than theoretical. The pairing is what makes this its own finding -- an authorization property (deleted accounts cannot authenticate) enforced only inside a string an attacker controls.",
+   "missing_control": "Enforce the deleted-account exclusion outside the query text -- a paranoid ORM finder, or an explicit check on the returned record before a session is issued.",
+   "falsifier": "A post-query assertion that authenticatedUser.deletedAt is null before afterLogin runs. There is none: line 47 checks only that user.data.id is truthy."
+  },
+  {
+   "id": "JS7R-04",
+   "title": "A session is issued for any row the login query returns, including one for an account that does not exist",
+   "severity": "High",
+   "confidence": "Medium",
+   "phase3_section": "A",
+   "location": "routes/login.ts:36-51 with :73-81 - login() / verifyPostLoginChallenges",
+   "covers": [
+    "ephemeralAccountantChallenge"
+   ],
+   "analysis": "After the raw query, the handler's only gate is if (user.data?.id) before calling afterLogin, which mints a token and registers the session. It never re-verifies that the row corresponds to a real, current user -- an injected UNION SELECT that fabricates a row with an id and a role is therefore sufficient to obtain an authenticated session for a principal that was never provisioned, at whatever role the fabricated row names. The post-login helper's own check -- counting rows for the accountant address and treating a count of zero as significant -- is the application acknowledging that this state is reachable. The afterValidate hook in models/user.ts:128-140 blocks creating that account through the normal path, which is precisely why the injection path matters: the guarded door is bolted and the unguarded one is next to it.",
+   "missing_control": "Re-fetch the authenticated principal by primary key through the ORM after authentication and issue a session only for a row that genuinely exists and is active.",
+   "falsifier": "A UserModel.findByPk re-validation between the query and afterLogin. The handler passes the raw query result straight through."
+  },
+  {
+   "id": "JS7R-05",
+   "title": "Passwords hashed with unsalted MD5",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "G",
+   "location": "models/user.ts:73-78 - password setter, via lib/insecurity.ts hash()",
+   "covers": [],
+   "analysis": "The password setter stores security.hash(clearTextPassword), which is an unsalted MD5 digest. MD5 is fast by design and unsalted digests are directly rainbow-table-attackable, so a database disclosure yields the plaintext of every common password immediately and identical passwords are visibly identical across accounts. Re-confirmed from the v6.0 pass.",
+   "missing_control": "A salted, work-factored KDF -- Argon2id, scrypt, or bcrypt -- with per-user salts.",
+   "falsifier": "A KDF behind security.hash. It is a plain digest helper."
+  },
+  {
+   "id": "JS7R-06",
+   "title": "Username and email sanitizers are downgraded or skipped under a runtime flag, allowing stored XSS",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "models/user.ts:44-72 - username and email setters",
+   "covers": [
+    "persistedXssUserChallenge"
+   ],
+   "analysis": "Both setters branch on utils.isChallengeEnabled(challenges.persistedXssUserChallenge). On the enabled path the username setter applies security.sanitizeLegacy instead of security.sanitizeSecure, and the email setter applies no sanitization at all -- it only runs a solveIf that tests whether the incoming value contains an iframe/javascript: payload, then stores the value unchanged. The persisted value is later rendered to other users, so this is stored XSS with the sanitizer selected at runtime by configuration. The legacy sanitizer is present in the codebase specifically as the bypassable variant, so the enabled path is a deliberate downgrade rather than an oversight. THIS IS THE SECOND FINDING THE v6.0 PASS MISSED, and it illustrates the same defect in the opposite direction: it sits ABOVE the MD5 sink that pass did report, inside a vuln-code-snippet hide-start/hide-end block spanning lines 38-72. An auditor following the file's own markers is steered around it; one reading the file end to end is not.",
+   "missing_control": "One sanitizer, applied unconditionally, on both fields -- output encoding at the render site regardless.",
+   "falsifier": "A configuration guarantee that the flag is never enabled in a deployed instance, or output encoding downstream that neutralises the stored value. The branch is live in code and the flag is runtime-settable."
+  }
+ ]
+}

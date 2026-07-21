@@ -10,6 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import run_comparator
 import sample_benchmark
 import score
 
@@ -177,6 +178,42 @@ class SamplerExclusionTests(unittest.TestCase):
             a.write_text("test_name,category\nT1,sqli\n")
             b.write_text("test_name,category\nT2,cmdi\n")
             self.assertEqual(sample_benchmark.load_excluded([a, b]), {"T1", "T2"})
+
+
+class ComparatorIsolationTests(unittest.TestCase):
+    """Helpers behind run_comparator.py's disposable-venv guarantee.
+
+    The end-to-end install is not exercised here (it needs network and ~1 min);
+    it is recorded in validation/owasp-benchmark-results.md. These cover the
+    pure logic that decides where the venv interpreter lives and whether the
+    host environment moved.
+    """
+
+    def test_witness_versions_covers_the_packages_semgrep_disturbs(self):
+        versions = run_comparator.witness_versions()
+        self.assertEqual(set(versions), set(run_comparator.WITNESS_PACKAGES))
+        self.assertIn("mcp", versions)
+
+    def test_absent_package_reports_a_sentinel_not_a_crash(self):
+        versions = run_comparator.witness_versions()
+        for value in versions.values():
+            self.assertIsInstance(value, str)
+
+    def test_venv_python_rejects_a_directory_without_an_interpreter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(FileNotFoundError):
+                run_comparator.venv_python(Path(tmp))
+
+    def test_venv_python_finds_the_interpreter_for_this_platform(self):
+        import sys as _sys
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subdir = "Scripts" if _sys.platform == "win32" else "bin"
+            name = "python.exe" if _sys.platform == "win32" else "python"
+            (root / subdir).mkdir()
+            (root / subdir / name).write_text("")
+            self.assertEqual(run_comparator.venv_python(root), root / subdir / name)
 
 
 if __name__ == "__main__":

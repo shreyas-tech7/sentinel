@@ -1,0 +1,206 @@
+{
+ "_about": "SENTINEL v7.0 Juice Shop BLIND coverage pass. Scope was drawn seed-fixed from routes/*.ts before any challenge marker, solveIf call, or challenges.yml entry was consulted; every finding below was formed by reading the code, and challenge keys were mapped only afterwards. Scored by validation/score_juiceshop.py. See validation/juice-shop-results.md for the blindness caveats that still apply.",
+ "target": "OWASP Juice Shop v20.1.1, commit 33518f5",
+ "date": "2026-07-20",
+ "scope_files": [
+  "routes/appConfiguration.ts",
+  "routes/appVersion.ts",
+  "routes/b2bOrder.ts",
+  "routes/captcha.ts",
+  "routes/deluxe.ts",
+  "routes/fileUpload.ts",
+  "routes/keyServer.ts",
+  "routes/payment.ts",
+  "routes/profileImageFileUpload.ts",
+  "routes/redirect.ts"
+ ],
+ "findings": [
+  {
+   "id": "JS7-01",
+   "title": "Entire application configuration served unauthenticated from an /admin/ path",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "C",
+   "location": "routes/appConfiguration.ts:9-16 - retrieveAppConfiguration; registered at server.ts:607",
+   "covers": [],
+   "analysis": "retrieveAppConfiguration returns structuredClone(config.util.toObject(config)) -- the whole resolved config tree -- and removes exactly one key, application.chatBot.llmApiUrl. The route is GET /rest/admin/application-configuration, and the 'admin' path segment is naming only: server.ts:607 registers it with no isAuthorized, no isAdmin, no middleware of any kind. The redaction is a denylist of one, so any secret added to config in future is exposed by default rather than withheld by default.",
+   "missing_control": "An authorization check on the route, plus an explicit allow-list of client-safe config keys instead of deleting one known-sensitive key.",
+   "falsifier": "An app.use('/rest/admin', security.isAdmin()) or equivalent guard covering this path, or a config schema that partitions public from private keys. Neither exists: server.ts:606-607 registers the version and configuration routes back-to-back with only utils.asyncHandler."
+  },
+  {
+   "id": "JS7-02",
+   "title": "Path traversal in the encryption-key file server via an incomplete separator denylist",
+   "severity": "High",
+   "confidence": "Medium",
+   "phase3_section": "B",
+   "location": "routes/keyServer.ts:9-19 - serveKeyFiles; registered at server.ts:278",
+   "covers": [],
+   "analysis": "params.file is passed to path.resolve('encryptionkeys/', file) and served with res.sendFile, guarded only by !file.includes('/'). The guard is a single-character denylist over the raw parameter rather than a containment check on the resolved path: it does not cover the backslash separator honoured by path.resolve on Windows, and it reasons about the input string instead of the destination. The correct shape is to resolve first and then verify the result is still inside the intended directory.",
+   "missing_control": "Resolve the path, then assert path.resolve(target).startsWith(path.resolve('encryptionkeys') + path.sep) before sending; reject otherwise.",
+   "falsifier": "A containment check on the resolved path, or a platform guarantee that backslash is never a separator. Neither is present; the check at keyServer.ts:13 is the only guard on the path."
+  },
+  {
+   "id": "JS7-03",
+   "title": "Private key directory is browsable and served without authentication",
+   "severity": "Medium",
+   "confidence": "High",
+   "phase3_section": "C",
+   "location": "routes/keyServer.ts:9-19 with server.ts:277-278",
+   "covers": [],
+   "analysis": "server.ts:277 mounts serveIndex over the encryptionkeys directory with icons and a details view, and :278 mounts serveKeyFiles for individual files. Neither is behind an auth check, so the contents of a directory whose name asserts it holds key material are enumerable and downloadable by anyone. Whether a given file is a live key is a deployment question, but the exposure is unconditional in code.",
+   "missing_control": "Do not serve a key directory over HTTP at all; if a public subset is genuinely needed, move it to a separate directory whose name does not claim otherwise, and drop the index listing.",
+   "falsifier": "An auth guard on /encryptionkeys, or evidence that the directory only ever holds public verification material. Neither appears in server.ts."
+  },
+  {
+   "id": "JS7-04",
+   "title": "Open redirect: the allowlist matches by substring containment",
+   "severity": "Medium",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/redirect.ts:14-22 - performRedirect, via lib/insecurity.ts:133-139 isRedirectAllowed",
+   "covers": [
+    "redirectChallenge"
+   ],
+   "analysis": "performRedirect takes query.to and hands it to res.redirect once isRedirectAllowed returns true. isRedirectAllowed tests url.includes(allowedUrl) for each entry -- containment anywhere in the string, not a parsed-origin comparison. An attacker-controlled destination that merely embeds an allowlisted URL passes, e.g. http://evil.example/?x=https://github.com/juice-shop/juice-shop. The app's own isUnintendedRedirect helper in the same file uses startsWith, so the file contains both the weak and the stronger form of the check, and the sink uses the weak one.",
+   "missing_control": "Parse the candidate with the URL API and compare the resolved origin against the allowlist, or drop user-supplied destinations in favour of server-side redirect keys.",
+   "falsifier": "An origin-level comparison inside isRedirectAllowed, or normalisation of toUrl before the check. insecurity.ts:136 is the only test applied and it is a raw includes()."
+  },
+  {
+   "id": "JS7-05",
+   "title": "CAPTCHA endpoint returns the answer alongside the challenge",
+   "severity": "Medium",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/captcha.ts:8-33 - captchas; registered unauthenticated at server.ts:615",
+   "covers": [],
+   "analysis": "captchas() builds an arithmetic expression, computes answer, persists both, and then responds with res.json(captcha) where captcha = { captchaId, captcha: expression, answer }. The answer field is in the response body. verifyCaptcha later compares req.body.captcha against that same stored answer, so a client that reads the field it was just given always passes. The control is decorative: it costs an automated client one extra field to copy.",
+   "missing_control": "Never serialise the answer to the client; verify server-side against the stored value only.",
+   "falsifier": "A response DTO that omits answer, or a transform between the persisted record and the JSON body. There is none -- the same object literal is both saved and returned."
+  },
+  {
+   "id": "JS7-06",
+   "title": "CAPTCHA records are replayable and their ids are a sequential counter",
+   "severity": "Low",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/captcha.ts:10 and 35-45 - captchas / verifyCaptcha",
+   "covers": [],
+   "analysis": "captchaId is req.app.locals.captchaId++, a predictable in-process counter, and verifyCaptcha does not delete or mark the record after a successful match. One solved (id, answer) pair therefore remains valid for unlimited subsequent submissions, and ids are guessable. This is distinct from JS7-05 and survives even if the answer were removed from the response: the reuse window is the defect.",
+   "missing_control": "Single-use semantics -- destroy or flag the row on first successful verification -- plus an unguessable id and an expiry.",
+   "falsifier": "A destroy()/update() on the captcha row inside verifyCaptcha, or a TTL on the model. verifyCaptcha only reads (findOne) and calls next()."
+  },
+  {
+   "id": "JS7-07",
+   "title": "Server-side code execution via user-supplied orderLinesData",
+   "severity": "Critical",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/b2bOrder.ts:17-24 - b2bOrder; registered unauthenticated at server.ts:648",
+   "covers": [
+    "rceChallenge",
+    "rceOccupyChallenge"
+   ],
+   "analysis": "body.orderLinesData is placed into a vm context and evaluated via notevil's safeEval inside vm.runInContext('safeEval(orderLinesData)', sandbox, { timeout: 2000 }). Two separate problems sit at this sink. First, arbitrary attacker-supplied source is evaluated: notevil is an interpreter-level sandbox, not a security boundary, and both it and node:vm are documented as unsuitable for untrusted input. Second, the 2000ms timeout is the only bound on execution, so a non-terminating payload occupies a request slot for two seconds each time -- the code's own error branch names this case. POST /b2b/v2/orders carries no auth middleware.",
+   "missing_control": "Parse orderLinesData as data (JSON.parse with a schema) rather than evaluating it as code. If evaluation is genuinely required, it belongs in an out-of-process, resource-capped worker, not an in-process vm.",
+   "falsifier": "A schema validation step before evaluation, or an out-of-process sandbox with a hard resource cap. Neither exists: the raw body value reaches safeEval on the live path."
+  },
+  {
+   "id": "JS7-08",
+   "title": "Deluxe membership granted with no payment when paymentMode is any unrecognised string",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/deluxe.ts:17-50 - upgradeToDeluxe; registered at server.ts:629",
+   "covers": [
+    "freeDeluxeChallenge"
+   ],
+   "analysis": "Payment is taken inside two independent if-blocks, one for req.body.paymentMode === 'wallet' and one for 'card'. There is no else, no default, and no validation of the field against an allowed set. A request with paymentMode omitted, null, or set to any other string skips both blocks and falls straight through to user.update({ role: security.roles.deluxe, ... }), which grants the role and issues an upgraded token. The role change is the last step regardless of whether any charge occurred, so the charge is effectively optional.",
+   "missing_control": "Validate paymentMode against an explicit allow-list and fail closed on anything else; make the role update conditional on a confirmed charge rather than on reaching the end of the handler.",
+   "falsifier": "An else branch rejecting unknown payment modes, or a charge-confirmation flag checked before user.update. Neither is present between deluxe.ts:23 and :44."
+  },
+  {
+   "id": "JS7-09",
+   "title": "Wallet balance check fails open when the user has no wallet row",
+   "severity": "Medium",
+   "confidence": "Medium",
+   "phase3_section": "B",
+   "location": "routes/deluxe.ts:23-31 - upgradeToDeluxe wallet branch",
+   "covers": [],
+   "analysis": "The insufficient-funds guard is if ((wallet != null) && wallet.balance < 49). When no wallet row exists, wallet is null, the condition is false, and control passes to the else branch, which calls WalletModel.decrement on a row that is not there. The decrement affects nothing, no error is raised, and the handler proceeds to grant the membership. The null case is the one path where the balance is definitively not sufficient, and it is the path that skips the rejection. Reported separately from JS7-08: this one bites even when paymentMode is a legitimate 'wallet'.",
+   "missing_control": "Treat a missing wallet as a hard failure, and verify the decrement actually affected a row before granting the role.",
+   "falsifier": "A null check that rejects, or an affected-rows assertion on the decrement result. The code checks the return value of neither."
+  },
+  {
+   "id": "JS7-10",
+   "title": "Zip Slip: archive entries write anywhere beneath the application root",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/fileUpload.ts:27-36 - extractZipBuffer, reached from handleZipFileUpload; server.ts:309",
+   "covers": [
+    "fileWriteChallenge"
+   ],
+   "analysis": "Each archive entry's declared path is concatenated as 'uploads/complaints/' + fileName and resolved, then written if absolutePath.includes(path.resolve('.')). Two flaws: the entry path is attacker-controlled and never sanitised of ../ sequences, and the containment test is a substring check against the process working directory rather than against the intended uploads/complaints directory. A traversal that climbs out of uploads/complaints but stays under the app root -- ../../ftp/legal.md, for instance -- resolves to a path that still contains the cwd and is therefore written. The write is a full file overwrite via pipeline into createWriteStream.",
+   "missing_control": "Normalise each entry path, reject any that escapes, and test containment against path.resolve('uploads/complaints') + path.sep rather than the app root.",
+   "falsifier": "A per-entry normalisation step, or a containment check anchored to the uploads directory. fileUpload.ts:32 anchors to path.resolve('.'), which is the whole application."
+  },
+  {
+   "id": "JS7-11",
+   "title": "XXE in the XML complaint upload, with parsed content echoed back to the caller",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/fileUpload.ts:68-100 - handleXmlUpload; server.ts:309",
+   "covers": [
+    "xxeFileDisclosureChallenge",
+    "xxeDosChallenge",
+    "deprecatedInterfaceChallenge"
+   ],
+   "analysis": "An uploaded .xml file's bytes are passed to parseXmlString with no entity restriction, so external and parameter entities declared in the document are resolved by the parser. Two consequences follow from the same sink: a SYSTEM entity pointed at a local path discloses file contents, and a recursive entity definition expands until the execution budget is exhausted, which the code's own 'Script execution timed out' branch handles. The disclosure is completed by the error path, which returns utils.trunc(xmlString, 400) -- the parsed document, entities already expanded -- to the caller in the response message. The endpoint is described in its own error text as deprecated for security reasons yet remains reachable, gated only by isChallengeEnabled rather than by configuration or auth.",
+   "missing_control": "Disable DTD processing and external entity resolution in the parser; stop returning parsed document content in error responses; remove the deprecated interface rather than leaving it mounted.",
+   "falsifier": "A parser configured with entity expansion disabled, or an entity-free schema validation ahead of parsing. parseXmlString receives the raw buffer contents directly."
+  },
+  {
+   "id": "JS7-12",
+   "title": "Unsafe YAML deserialization of uploaded files",
+   "severity": "High",
+   "confidence": "High",
+   "phase3_section": "B",
+   "location": "routes/fileUpload.ts:102-134 - handleYamlUpload; server.ts:309",
+   "covers": [
+    "yamlBombChallenge",
+    "deprecatedInterfaceChallenge"
+   ],
+   "analysis": "An uploaded .yml/.yaml file is loaded with yaml.load(data) inside a vm context with a 2000ms timeout. yaml.load is the unrestricted loader -- it honours the full type set rather than the safe subset -- applied to a wholly attacker-supplied document. The alias-expansion bomb is the reachable denial-of-service case here, and the code acknowledges it by name in its 'Invalid string length' / timeout branch. The vm wrapper bounds wall-clock time but does nothing about memory growth during expansion, and the same deprecated-interface exposure as JS7-11 applies.",
+   "missing_control": "Use the safe schema loader (yaml.load with CORE_SCHEMA / the library's safe variant), cap document size before parsing, and remove the deprecated endpoint.",
+   "falsifier": "A safe-schema loader or a pre-parse size cap. Neither is present; data goes from the upload buffer to yaml.load unchanged."
+  },
+  {
+   "id": "JS7-13",
+   "title": "Upload size and type middleware record telemetry but enforce nothing",
+   "severity": "Medium",
+   "confidence": "High",
+   "phase3_section": "E",
+   "location": "routes/fileUpload.ts:54-67 - checkUploadSize, checkFileType; server.ts:309",
+   "covers": [
+    "uploadSizeChallenge",
+    "uploadTypeChallenge"
+   ],
+   "analysis": "Both functions are mounted in the /file-upload chain in positions that read as validation. checkUploadSize evaluates file.size > 100000 and passes the result to challengeUtils.solveIf, then calls next() unconditionally. checkFileType computes the extension, tests it against a permitted set, hands that to solveIf, and likewise always calls next(). Neither ever returns an error or halts the chain, so an oversized file and a disallowed extension both proceed exactly as a valid upload would. This is a security control that is structurally present and semantically absent -- the shape SENT-ARCH-01 describes -- and it is more dangerous than having no check, because the middleware names promise enforcement to anyone reading the route.",
+   "missing_control": "Reject rather than record: return a 413 above the size limit and a 415 for a disallowed type, before any handler consumes the file.",
+   "falsifier": "A res.status(...).end() or an error passed to next() on the failing branch of either function. Both call next() with no argument on every path."
+  },
+  {
+   "id": "JS7-14",
+   "title": "Profile image write failure is swallowed, leaving the user record pointing at a file that was never written",
+   "severity": "Low",
+   "confidence": "High",
+   "phase3_section": "F",
+   "location": "routes/profileImageFileUpload.ts:43-56 - profileImageFileUpload",
+   "covers": [],
+   "analysis": "fs.writeFile is wrapped in a try/catch whose handler calls logger.warn and nothing else -- no rethrow, no next(err), no early return. Execution continues into the next block, which updates the user row's profileImage to the path that was just not written. The request then redirects to /profile as though it succeeded. The database ends up asserting the existence of a file that does not exist, and the caller is told the operation worked. The file-type validation above it is sound (magic-byte sniffing via file-type, with an image/* prefix requirement, and a filename built from the session user id rather than the upload) -- the defect is purely in the failure path.",
+   "missing_control": "Treat the write failure as fatal for the request: return before the DB update, and surface the error to the caller.",
+   "falsifier": "A return or rethrow inside the catch at line 46. The block ends after logger.warn and falls through."
+  }
+ ]
+}

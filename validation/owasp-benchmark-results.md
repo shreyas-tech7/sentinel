@@ -573,3 +573,73 @@ limited claim.
 - `validation/data/sentinel-benchmark-java-v7-verdicts.json` / `...-annotated.json` — per-case
   verdicts with the dataflow reasoning behind each.
 - `validation/data/sentinel-benchmark-python-v7-verdicts.json` / `...-annotated.json` — same, Python.
+
+---
+
+# Running a comparison scanner without damaging the environment
+
+**Every comparison run from v7.0 onward goes through
+[`validation/run_comparator.py`](run_comparator.py).** Installing a scanner directly is no longer an
+acceptable way to produce a comparison number in this project.
+
+## What went wrong twice
+
+Semgrep pins `mcp`, `jsonschema`, and `opentelemetry-api` transitively. Installing it for the v5.0
+comparison, and again for the v6.0 one, **downgraded all three in whatever environment was active**,
+breaking other tooling that depended on them. Both times the fix was to notice afterwards and undo it
+by hand, and the v6.0 results file carries the residue of that as a parenthetical warning telling the
+next person to remember. Remembering is not a control. A comparison run is a measurement of the
+target; it has no business mutating the machine it measures from.
+
+## The fix
+
+`run_comparator.py` creates a throwaway virtualenv under the system temp directory, installs the
+pinned tool into *that* interpreter, invokes the tool's console script from inside it, and deletes the
+tree in a `finally` block — so it goes away on success, on tool failure, and on Ctrl-C alike. The
+interpreter running the script is never a pip target, so a dependency resolver cannot reach the host
+environment even if it wants to.
+
+```bash
+python validation/run_comparator.py --tool semgrep==1.170.0 --verify-isolation \
+    --out validation/data/semgrep-raw.json \
+    -- scan --config semgrep-rules/java --json --quiet --metrics=off <sampled files>
+```
+
+Everything after `--` is passed to the tool verbatim. `--tool` must be pinned — an unpinned comparator
+makes the run unreproducible, and the script warns when it sees one. `--keep` retains the venv for
+debugging.
+
+## The guarantee is checked, not asserted
+
+`--verify-isolation` reads the installed versions of the three witness packages in the *host*
+interpreter before and after the run and exits non-zero if any of them moved. That turns the claim
+into a test that fails loudly rather than a promise in a comment.
+
+Verified end to end on 2026-07-20, installing the same Semgrep version whose two previous installs
+caused the damage:
+
+```
+host interpreter : ...\hermes-agent\venv\Scripts\python.exe
+witness packages : {'mcp': '1.26.0', 'jsonschema': '4.26.0', 'opentelemetry-api': '<absent>'}
+creating disposable venv at ...\Temp\sentinel-comparator-bn8q6j_w\venv
+installing semgrep==1.170.0 (isolated; the host environment is not a target)
+installed in venv: semgrep==1.170.0
+running: semgrep --version
+1.170.0
+disposable venv removed
+isolation verified: ['mcp', 'jsonschema', 'opentelemetry-api'] unchanged in the host environment
+```
+
+Semgrep 1.170.0 was genuinely installed and executed. After the run the host still reported
+`mcp==1.26.0` and `jsonschema==4.26.0` unchanged, `opentelemetry-api` still absent, `semgrep` not
+installed, and no `sentinel-comparator-*` directory left behind.
+
+**A container is the stronger form of this** and is the right move when a future comparator needs
+system libraries rather than just Python packages — the isolation boundary moves from the interpreter
+to the kernel, and the same `--verify-isolation` check still applies from outside. A virtualenv is
+sufficient for the pip-installable scanners this project compares against today, and it needs no
+daemon, which matters because this machine has no container runtime available.
+
+**No comparison numbers were produced by the v7.0 run** — the 64-case sample above is SENTINEL-only,
+by design. This section documents the mechanism for the next comparative run rather than reporting
+one.
