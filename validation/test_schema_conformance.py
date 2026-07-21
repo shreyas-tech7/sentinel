@@ -231,6 +231,35 @@ class BenchmarkConformanceTests(unittest.TestCase):
             self.assertTrue(cwe and all(isinstance(n, int) for n in cwe), finding["id"])
 
 
+class BenchmarkFixtureTests(unittest.TestCase):
+    """The Benchmark corpus tests must run everywhere, not skip quietly in CI.
+
+    Before 9.0.0 the three tests above skipped in CI, because the ground truth
+    was only reachable through a sibling Benchmark clone that CI does not have.
+    A skip is a silent pass: the suite stayed green while 117 records went
+    unchecked. Vendoring a fixture fixed it -- and this asserts the fixture is
+    still there, so deleting it fails loudly instead of quietly reopening the
+    gap.
+    """
+
+    def test_vendored_ground_truth_is_committed(self):
+        for lang in ("java", "python"):
+            path = sf.REPO_ROOT / "validation" / "data" / f"benchmark-truth-{lang}.csv"
+            self.assertTrue(
+                path.is_file(),
+                f"{path.name} missing -- BenchmarkConformanceTests will skip in CI, "
+                f"which reads as a pass while checking nothing",
+            )
+
+    def test_fixture_covers_every_scored_case(self):
+        """A partial fixture raises KeyError mid-run; catch it here instead."""
+        try:
+            findings = sf.collect("benchmark")
+        except KeyError as exc:
+            self.fail(f"vendored ground truth is missing a scored case: {exc}")
+        self.assertGreater(len(findings), 100)
+
+
 class NegativeControlTests(unittest.TestCase):
     """A validator that never rejects anything proves nothing."""
 
