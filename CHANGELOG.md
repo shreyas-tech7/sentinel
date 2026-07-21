@@ -8,6 +8,94 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.0] — 2026-07-20
+
+**Making the parts nobody validated trustworthy.** Four consecutive releases made the validation
+methodology bigger or deeper, and the numbers are now the best-evidenced thing in the repository.
+The parts built for *other* consumers were not: the findings schema had never been run against real
+output, the comparative claim rested on a single comparator, and the README still advertised version
+5.0.0. This release does no new scaling — it makes what already exists checkable by someone who did
+not watch it get built.
+
+No phase, rubric, catalog class, or check changed. The six phases (0–5), STRIDE core, severity and
+confidence rubrics, evidence standard, prose report template, findings schema, standards-currency
+check, all 45 `SENT-*` classes, and the `security-audit` skill name are untouched.
+
+### Added
+- **Schema conformance testing against real output** (`validation/serialize_findings.py`,
+  `validation/test_schema_conformance.py`, 18 new tests — suite goes 25 → 43). Until now the only
+  thing ever checked against `schema/finding.schema.json` was one hand-written worked example. Real
+  archived output is now serialized and validated with an actual draft-2020-12 validator: 14
+  findings parsed from the prose reports in `examples/`, 41 Juice Shop coverage records, and 117
+  Benchmark true positives whose CWEs are read from the Benchmark's own ground-truth CSV.
+  - The three corpora are not equally complete and are not treated as if they were. Only the prose
+    reports carry every required field, so only they are validated against the full schema. The
+    scoring archives are validated under a partial profile **derived from the live schema at
+    runtime**, relaxing the required-field list and nothing else — every type, enum, pattern, and
+    `additionalProperties` rule still applies, so a schema change still breaks the tests.
+    Serialization never invents a field to make a record conform.
+  - Wired into CI with `jsonschema` as the repo's only test dependency. `check_schema.py` stays
+    stdlib-only and still runs unconditionally. CI sets `SENTINEL_REQUIRE_JSONSCHEMA=1` so a missing
+    validator fails the build instead of skipping silently — a green run has to mean the check ran.
+- **Bandit 1.8.6 as a second comparator** on the *same already-scored* 98 Python Benchmark cases —
+  a same-sample second opinion, not a new draw. Run through the existing `run_comparator.py`
+  isolation wrapper; host packages verified unchanged afterwards.
+
+  | Tool | N | Precision | Recall | F1 |
+  |---|---|---|---|---|
+  | **SENTINEL** (v6.0 run) | 98 | 0.9677 | 1.0000 | **0.9836** |
+  | Semgrep 1.170.0 (security-only) | 98 | 0.4634 | 0.6333 | **0.5352** |
+  | Bandit 1.8.6 (any severity) | 98 | 0.4000 | 0.4667 | **0.4308** |
+
+  This settles the question v6.0 raised and could not answer: Semgrep's weaker Python figure is
+  **not** explained by a thin Python ruleset, because a Python-native scanner scores lower still.
+  Bandit returns zero true positives in seven of fourteen categories — exactly the ones where the
+  vulnerability is a tainted value reaching a sink rather than a dangerous construct being present.
+  It is explicitly **not** a claim that SENTINEL is the better tool: Bandit is a pattern linter with
+  no taint tracking, measured outside its design goal, on a synthetic dataflow corpus, at a fraction
+  of the cost.
+- **`validation/bandit_to_verdicts.py`** — converts a Bandit report to per-case verdicts under an
+  explicit flagging convention (`any` / `medium-plus`, both reported). It **refuses to score any
+  report containing file errors**, so an unanalyzed file can never be counted as a clean negative.
+- **`--python` on `validation/run_comparator.py`** — selects and records the interpreter the
+  disposable venv is built from.
+
+### Fixed
+- **Two silent-failure modes in the Bandit run, both caught before they reached a published number.**
+  The first attempt scanned nothing (a CRLF file list left a trailing `\r` on every path) and the
+  second failed to parse 28 of 98 files — those cases use PEP 701 f-strings that only Python 3.12+
+  can tokenize, and the run was under 3.11. Scoring the second attempt would have counted 28
+  never-analyzed files as clean negatives and published a materially wrong Bandit figure. Both are
+  written up in full in the results file rather than quietly corrected, and both now have structural
+  guards (`--python`, and the converter's refusal to score a report with errors).
+- **A gap between the report template and four archived findings**, found by running the new
+  conformance test for the first time. Four Low-severity findings in `examples/` omit the **Attack
+  Scenario** and **Impact** bullets that `SKILL.md`'s "Output format" makes part of every finding
+  block. The schema matches the template, so the reports are what deviate — the schema was left
+  unchanged, the frozen example reports were left unedited, and the four are pinned as a known set
+  in the test so the deviation cannot grow or vanish unnoticed.
+- **Stale documentation claims**, all verified against live state:
+  - README version badge read **5.0.0** against a live skill at 7.0.0.
+  - README described the comparison as head-to-head with Semgrep only, and reported Semgrep's Python
+    row without the *security-category-only* qualifier the results file is careful to attach.
+  - README's coverage section said "nine groups" above a list of ten bullets. Nine is correct — it
+    is the catalog's own A–I taxonomy, where secrets/config and supply chain share group C — so the
+    sentence was clarified rather than the number changed.
+  - README's repository-layout block omitted `check_skill_package.py`.
+  - CONTRIBUTING listed `check_repo.py` as "the same script CI runs" when CI runs five steps; a
+    contributor following it would pass locally and fail in CI. Now lists all of them, plus the
+    `jsonschema` note.
+- **Caveats now travel with the numbers they belong to.** The README's headline table carries the
+  synthetic-corpus caveat inline instead of only in `validation/`, the two Juice Shop passes stay
+  labelled blind and non-blind wherever they appear, and the 64-case regression result keeps its
+  "targeted retest, not a blind accuracy figure" framing.
+
+### Unchanged and worth stating
+- The 208-case blind run (Java F1 **0.9358**, Python F1 **0.9836**) remains the headline accuracy
+  figure. Nothing in this release re-scored it, and no SENTINEL verdict was revisited.
+- No new Benchmark or Juice Shop sample was drawn. A broad, unconcentrated blind resample at
+  comparable scale is still the most valuable open validation work, and is deliberately deferred.
+
 ## [7.0.0] — 2026-07-20
 
 **The corrections become checks.** 6.0.0's most valuable output was not its bigger sample — it was

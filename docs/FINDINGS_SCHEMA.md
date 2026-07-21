@@ -113,3 +113,36 @@ for i, finding in enumerate(findings):
 ```
 
 An empty error stream means the export conforms to the contract.
+
+## Conformance is tested, not asserted
+
+Until v8.0 the only thing ever checked against this schema was the worked example above — which
+proves the example is well-formed and nothing about whether real audit output serializes cleanly.
+Two pieces now close that gap, and they check different things:
+
+| What | Runs | Checks |
+|---|---|---|
+| [`scripts/check_schema.py`](../scripts/check_schema.py) | always, stdlib-only | the schema file is well-formed and self-consistent, and the worked example still satisfies it |
+| [`validation/test_schema_conformance.py`](../validation/test_schema_conformance.py) | with `jsonschema` installed | **real** serialized findings against a real draft-2020-12 validator |
+
+[`validation/serialize_findings.py`](../validation/serialize_findings.py) does the serialization, from
+three archived corpora — 14 findings parsed out of the prose reports in `examples/`, 41 Juice Shop
+coverage records, and 117 Benchmark true positives whose CWEs come from the Benchmark's own
+ground-truth CSV.
+
+Two things are worth knowing before reading those numbers:
+
+- **The corpora are not equally complete, and the tests do not pretend otherwise.** Only the prose
+  reports carry every required field, so only they are validated against the full schema. The Juice
+  Shop and Benchmark archives are *scoring* records — they were captured to answer "was this case
+  called correctly", and carry no `attack_scenario`, `impact`, or (for Juice Shop) CWE. They are
+  validated under a partial profile derived from the live schema at runtime, which relaxes the
+  required-field list and nothing else: every type, enum, pattern, and `additionalProperties` rule
+  still applies. Serialization never invents a field to make a record conform.
+- **The first run of this test found a real defect, and it was not in the schema.** Four archived
+  findings omit the **Attack Scenario** and **Impact** bullets that `SKILL.md`'s "Output format"
+  makes part of every finding block. All four are Low-severity defense-in-depth items whose analysis
+  notes there is no active exploit path — which explains the omission without licensing it. Since
+  the schema matches the report template, the reports are what deviate; the schema was left
+  unchanged and the four are pinned as a known set in the test, so the deviation cannot silently
+  grow or disappear.

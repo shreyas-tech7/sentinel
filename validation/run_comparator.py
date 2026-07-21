@@ -25,6 +25,14 @@ disturb before and after the run and fails loudly if any of them moved, so the
 guarantee is checked rather than asserted. `--keep` leaves the venv in place
 for debugging and prints its path.
 
+`--python` selects the interpreter the venv is built from, defaulting to the one
+running this script. It matters for AST-based tools: the v8.0 Bandit run against
+BenchmarkPython silently failed to parse 28 of 98 files under Python 3.11,
+because those cases use PEP 701 f-strings (nested quotes and brackets inside an
+f-string) that only 3.12+ can tokenize. A scanner that cannot parse a third of
+the sample scores far worse than it deserves, so the base interpreter is a
+comparison parameter and is printed with the rest of the run's provenance.
+
 Standard library only; needs network access for the install step.
 """
 
@@ -85,6 +93,12 @@ def main() -> int:
         help="console script to invoke; defaults to the package name in --tool",
     )
     parser.add_argument("--out", type=Path, default=None, help="write tool stdout here")
+    parser.add_argument(
+        "--python",
+        default=None,
+        help="base interpreter to build the venv from (default: the one running this "
+        "script). AST-based scanners can only parse syntax their interpreter knows.",
+    )
     parser.add_argument("--keep", action="store_true", help="do not delete the venv")
     parser.add_argument(
         "--verify-isolation",
@@ -102,14 +116,31 @@ def main() -> int:
         print(f"warning: {args.tool} is unpinned; the run will not be reproducible", file=sys.stderr)
 
     before = witness_versions()
+    base_python = args.python or sys.executable
     print(f"host interpreter : {sys.executable}")
+    print(f"venv base python : {base_python}")
+    if args.python:
+        probe = run([base_python, "-c", "import sys; print(sys.version.split()[0])"])
+        if probe.returncode != 0:
+            print(f"error: {base_python} is not a usable interpreter", file=sys.stderr)
+            print(probe.stderr, file=sys.stderr)
+            return 1
+        print(f"venv base version: {probe.stdout.strip()}")
     print(f"witness packages : {before}")
 
     workdir = Path(tempfile.mkdtemp(prefix="sentinel-comparator-"))
     try:
         env_root = workdir / "venv"
         print(f"creating disposable venv at {env_root}")
-        venv.EnvBuilder(with_pip=True, clear=True).create(env_root)
+        if args.python:
+            # Built by the chosen interpreter itself, so the venv runs that version.
+            created = run([base_python, "-m", "venv", str(env_root)])
+            if created.returncode != 0:
+                print(created.stderr, file=sys.stderr)
+                print(f"error: could not create a venv with {base_python}", file=sys.stderr)
+                return 1
+        else:
+            venv.EnvBuilder(with_pip=True, clear=True).create(env_root)
         python = venv_python(env_root)
 
         print(f"installing {args.tool} (isolated; the host environment is not a target)")

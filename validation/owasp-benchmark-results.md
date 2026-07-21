@@ -643,3 +643,155 @@ daemon, which matters because this machine has no container runtime available.
 **No comparison numbers were produced by the v7.0 run** — the 64-case sample above is SENTINEL-only,
 by design. This section documents the mechanism for the next comparative run rather than reporting
 one.
+
+---
+
+# Second comparator — Bandit 1.8.6 on the same 98 Python cases (2026-07-20)
+
+The v6.0 run left an open question it could not answer with the data it had. Semgrep's Python
+result (F1 **0.5352**) was much weaker than its Java result (F1 **0.7258**) on the same methodology.
+Two explanations fit equally well:
+
+1. SENTINEL genuinely has a larger advantage on Python, or
+2. the *Semgrep Python security ruleset specifically* is thinner than its Java one, and the gap is an
+   artifact of one tool's rule coverage rather than a property of the task.
+
+A second, Python-native comparator distinguishes them. **Bandit** is the obvious choice: free, OSS,
+Python-only, maintained by PyCQA, and the default Python security linter in most CI templates.
+
+**No new sample was drawn.** This is a same-sample second opinion on the *already-scored* 98 Python
+cases from the v6.0 run (`validation/data/benchmark-sample-python-v6.csv`), not another scaling
+round. SENTINEL's and Semgrep's numbers below are the v6.0 figures, unchanged and not re-run.
+
+## How to reproduce
+
+```bash
+# Bandit, run through the isolation wrapper -- nothing is installed on the host.
+# --python matters here; see "The 28 files that did not parse" below.
+python validation/run_comparator.py --tool bandit==1.8.6 --entrypoint bandit \
+    --python /path/to/python3.13 \
+    --out validation/data/bandit-raw-python-v8.json --verify-isolation \
+    -- -f json -q $(cat filelist.txt)
+
+# Convert issues to per-case verdicts under an explicit flagging convention.
+python validation/bandit_to_verdicts.py \
+    --report validation/data/bandit-raw-python-v8.json \
+    --sample validation/data/benchmark-sample-python-v6.csv \
+    --convention any \
+    --out validation/data/bandit-benchmark-python-v8-verdicts.json \
+    --annotated-out validation/data/bandit-benchmark-python-v8-verdicts-annotated.json
+
+python validation/score.py --benchmark-root ../BenchmarkPython \
+    --verdicts validation/data/bandit-benchmark-python-v8-verdicts.json \
+    --label "Bandit 1.8.6 (any)" --markdown
+```
+
+Isolation held: `mcp==1.26.0` and `jsonschema==4.26.0` unchanged on the host, `opentelemetry-api`
+still absent, `bandit` not installed outside the disposable venv.
+
+## The 28 files that did not parse — a root cause, not a footnote
+
+The first Bandit run reported **0 findings and 98 file errors**; a second reported 67 findings with
+**28 `syntax error while parsing AST from file`**. Both were wrong, for two different reasons, and
+both are recorded here because a comparison that quietly drops a third of its sample is worse than
+no comparison at all.
+
+- The **first** run passed paths read from a CRLF file list, so every path carried a trailing `\r`.
+  Bandit reported `Invalid argument` per file and scanned nothing. The empty result contradicted
+  code already known to contain injections — which is the only reason it was caught.
+- The **second** run parsed under Python **3.11**. Twenty-eight BenchmarkPython cases use **PEP 701**
+  f-strings (nested quotes and brackets inside an f-string), which only **3.12+** can tokenize. Under
+  3.11 those files are unparseable and Bandit emits no findings for them.
+
+Scoring that second run would have counted 28 never-analyzed files as clean negatives and published a
+materially wrong Bandit number. Two changes make that failure structural rather than remembered:
+`run_comparator.py` gained a `--python` flag so the base interpreter is an explicit, recorded
+parameter of every run, and `bandit_to_verdicts.py` **refuses to score any report containing file
+errors** rather than treating an unanalyzed file as a negative.
+
+The numbers below come from a run under **Python 3.13.5**: 98 files scanned, **0 errors**, 67 issues
+across 35 files.
+
+## Flagging convention
+
+Reported two ways, as the Semgrep Python run was:
+
+- **any** — a file is flagged on >=1 Bandit issue of any severity. Same ">=1 finding = flagged"
+  convention as the Java runs. This is the headline figure.
+- **medium-plus** — flagged only on a MEDIUM/HIGH issue. Bandit's LOW tier is mostly `blacklist`
+  import rules (B403 `import pickle`, B404 `import subprocess`, B406/B408 XML parsers) that fire on
+  an import's *presence*, whether or not anything tainted reaches it.
+
+Unlike Semgrep, **no category filter was needed** — every Bandit rule is a security rule, so there is
+no maintainability rule to strip out. The two conventions barely differ (F1 0.4308 vs 0.4062), which
+itself says the LOW-tier import rules are not what drives the result.
+
+## Results — Bandit 1.8.6, Python (98 cases, 2026-07-20)
+
+| Category | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| cmdi | 7 | 6 | 1 | 0 | 0 | 0.8571 | 1.0000 | 0.9231 |
+| codeinj | 7 | 2 | 5 | 0 | 0 | 0.2857 | 1.0000 | 0.4444 |
+| deserialization | 7 | 2 | 2 | 0 | 3 | 0.5000 | 1.0000 | 0.6667 |
+| hash | 7 | 1 | 0 | 0 | 6 | 1.0000 | 1.0000 | 1.0000 |
+| ldapi | 7 | 0 | 0 | 3 | 4 | n/a | 0.0000 | n/a |
+| pathtraver | 7 | 0 | 0 | 3 | 4 | n/a | 0.0000 | n/a |
+| redirect | 7 | 0 | 0 | 1 | 6 | n/a | 0.0000 | n/a |
+| securecookie | 7 | 0 | 0 | 4 | 3 | n/a | 0.0000 | n/a |
+| sqli | 7 | 2 | 5 | 0 | 0 | 0.2857 | 1.0000 | 0.4444 |
+| trustbound | 7 | 0 | 0 | 3 | 4 | n/a | 0.0000 | n/a |
+| weakrand | 7 | 0 | 0 | 1 | 6 | n/a | 0.0000 | n/a |
+| xpathi | 7 | 0 | 2 | 1 | 4 | 0.0000 | 0.0000 | n/a |
+| xss | 7 | 0 | 0 | 0 | 7 | n/a | n/a | n/a |
+| xxe | 7 | 1 | 6 | 0 | 0 | 0.1429 | 1.0000 | 0.2500 |
+| **all (Bandit 1.8.6 (any))** | 98 | 14 | 21 | 16 | 47 | 0.4000 | 0.4667 | 0.4308 |
+
+The `medium-plus` variant: 13 TP / 21 FP / 17 FN / 47 TN — P 0.3824, R 0.4333, **F1 0.4062**.
+
+## Three-way comparison — same 98 Python cases
+
+| Tool | N | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|---|
+| **SENTINEL** (v6.0 run) | 98 | 30 | 1 | 0 | 67 | 0.9677 | 1.0000 | **0.9836** |
+| Semgrep 1.170.0 (security-only) | 98 | 19 | 22 | 11 | 46 | 0.4634 | 0.6333 | **0.5352** |
+| Bandit 1.8.6 (any) | 98 | 14 | 21 | 16 | 47 | 0.4000 | 0.4667 | **0.4308** |
+
+## What this answers, and what it does not
+
+**It answers the question that motivated it.** Hypothesis 2 does not hold: a Python-native,
+Python-only scanner does **not** recover the ground Semgrep lost — it scores lower still (0.4308 vs
+0.5352). Semgrep's weaker Python figure is therefore not explained by its Python security ruleset
+being unusually thin, because the dedicated Python tool has the same problem more severely.
+
+**The mechanism is visible in the per-category rows.** Bandit returns **zero** true positives in
+seven of fourteen categories — `ldapi`, `pathtraver`, `redirect`, `securecookie`, `trustbound`,
+`weakrand`, `xss`. Those are precisely the categories where the vulnerability is *a tainted value
+reaching a sink* rather than a dangerous construct being present. Bandit is an AST pattern linter
+with no taint tracking: it sees `subprocess(..., shell=True)`, `eval`, `pickle.loads`, and
+`yaml.load` and flags them wherever they appear, which is why `cmdi` scores 0.9231 while
+`pathtraver` scores zero. Its 21 false positives are the same property in the other direction — the
+construct is present on cases the Benchmark marks safe.
+
+**It does not establish that SENTINEL is a better tool than Bandit.** The OWASP Benchmark is a corpus
+of *dataflow puzzles* — every case is built so the answer depends on tracing a value from source to
+sink through deliberate decoys. That is the workload taint analysis exists for and the workload
+pattern linting is definitionally bad at. Bandit is being measured outside its design goal; a fast
+import-and-construct linter that runs in seconds across a whole repository is solving a different
+problem than a hand-traced four-phase audit, and it costs a rounding error of the time. What this run
+establishes is narrower, and is the only claim made: **on cross-function dataflow cases, SENTINEL's
+Python margin is a real property of the task rather than an artifact of which comparator was
+chosen.**
+
+The synthetic-corpus caveat from the 208-case run applies here unchanged, and with equal force to all
+three tools: Benchmark cases are constructed puzzles, not real application code, and no figure in
+this section transfers to a claim about production repositories.
+
+## Files
+
+- `validation/data/bandit-raw-python-v8.json` — Bandit's raw JSON report (98 files, 0 errors).
+- `validation/data/bandit-benchmark-python-v8-verdicts.json` / `...-annotated.json` — per-case
+  verdicts under the `any` convention, annotated with the rule ids that fired.
+- `validation/data/bandit-benchmark-python-v8-medplus-verdicts.json` / `...-annotated.json` — the
+  same under the `medium-plus` convention.
+- `validation/bandit_to_verdicts.py` — the converter, including its refusal to score a report that
+  contains file errors.

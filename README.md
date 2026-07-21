@@ -4,7 +4,7 @@
 software — any language, any framework, any artifact type.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-5.0.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-8.0.0-informational.svg)](CHANGELOG.md)
 [![Use: defensive only](https://img.shields.io/badge/use-defensive%20only-important.svg)](SECURITY.md)
 
 SENTINEL is a persona and a fixed six-phase workflow that audits source code the way a careful staff
@@ -34,15 +34,29 @@ Every finding can also be exported to a stable, versioned
 newer edition.
 
 Accuracy is [measured on blind OWASP Benchmark samples across two
-languages](validation/owasp-benchmark-results.md), head-to-head with Semgrep on the identical files.
-**The 208-case run is the headline figure** — the largest, coldest sample, and the one to quote:
+languages](validation/owasp-benchmark-results.md), head-to-head with Semgrep and Bandit on the
+identical files. **The 208-case run is the headline figure** — the largest, coldest sample, and the
+one to quote:
 
 | Blind sample (2026-07-19) | N | Precision | Recall | F1 |
 |---|---|---|---|---|
 | **SENTINEL — Benchmark Java** | 110 | 0.9107 | 0.9623 | **0.9358** |
 | **SENTINEL — Benchmark Python** | 98 | 0.9677 | 1.0000 | **0.9836** |
 | Semgrep 1.170.0 — Java | 110 | 0.6338 | 0.8491 | 0.7258 |
-| Semgrep 1.170.0 — Python | 98 | 0.4634 | 0.6333 | 0.5352 |
+| Semgrep 1.170.0 — Python *(security-category rules only)* | 98 | 0.4634 | 0.6333 | 0.5352 |
+| Bandit 1.8.6 — Python *(added 2026-07-20, same 98 files)* | 98 | 0.4000 | 0.4667 | 0.4308 |
+
+**These are synthetic dataflow puzzles, not a claim of accuracy on real code.** Every Benchmark case
+is built so the answer turns on tracing a value past deliberate decoys — the workload taint analysis
+exists for. A good score here does not transfer automatically to messy production repositories, and
+that caveat applies to all three tools equally.
+
+Bandit was added to settle a question the Semgrep numbers alone could not: whether Semgrep's weaker
+Python result meant a real SENTINEL advantage or just a thin Python ruleset. A Python-native scanner
+scoring lower still (0.4308) says it is not a ruleset artifact. It also is **not** evidence that
+SENTINEL is the better tool in general — Bandit is a pattern linter with no taint tracking, scoring
+zero in the seven categories that require following data to a sink, and it scans a whole repository
+in the time a hand-traced audit spends on one file.
 
 These supersede an earlier 66-case Java-only run that scored a perfect 1.0000 F1 — **that result did
 not survive scaling**, and the eight cases it got wrong at 110 are individually documented with root
@@ -190,7 +204,8 @@ scanner's rules did not match.
 Grouped below; the [catalog](skill/references/vulnerability-catalog.md) has detection guidance, OWASP/CWE
 classification, and a cross-linked fix for each.
 
-Forty-five classes across nine groups:
+Forty-five classes, in the catalog's nine lettered groups (A–I). They are listed as ten bullets
+below for readability — secrets/config and supply chain share group **C** in the catalog itself:
 
 - **Authorization** — broken object-level authorization / [IDOR](skill/references/vulnerability-catalog.md#sent-authz-01--broken-object-level-authorization--idor),
   broken function-level authorization, middleware-only enforcement, missing auth on Server Actions /
@@ -274,11 +289,11 @@ sentinel/
 │   └── references/        # vulnerability catalog · remediation patterns · tooling · artifact playbooks
 │       └── stack-playbooks/  # one file per stack (generic, supabase, nextjs, python, java-spring, …)
 ├── schema/                # finding.schema.json — machine-readable findings contract (schema_version 1.0)
-├── validation/            # accuracy harness + dated results (Benchmark Java/Python, Juice Shop, Semgrep, regression)
+├── validation/            # accuracy harness + dated results (Benchmark Java/Python, Juice Shop, Semgrep + Bandit, regression)
 ├── prompts/               # standalone master prompt + quick single-file variant
 ├── docs/                  # methodology · threat modeling · Supabase RLS guide · findings schema · how-to-use
 ├── examples/              # three redacted example audits
-├── scripts/               # check_repo.py, check_standards_currency.py, check_schema.py
+├── scripts/               # check_repo.py, check_standards_currency.py, check_schema.py, check_skill_package.py
 └── .github/               # issue templates + CI workflow and notes
 ```
 
@@ -291,12 +306,18 @@ sentinel/
   SENTINEL *publishes*; wiring it into **Gauntlet** or **ReconBrief** belongs to those repositories.
   SENTINEL never calls into them.
 - **Validation numbers are a matched-sample accuracy check, not a throughput claim.** The
-  [Benchmark/Semgrep comparison](validation/owasp-benchmark-results.md) is a 208-case blind sample out
+  [Benchmark comparison](validation/owasp-benchmark-results.md) is a 208-case blind sample out
   of ~3970 available cases; it does not assert the same accuracy at full scale or on arbitrary
   real-world code, and it is not a scanner replacement — scanners remain the right Phase-3 lead
   generators, and Semgrep scanned all 208 files in seconds where these verdicts were produced by hand.
   Benchmark is also synthetic: its decoys are deliberate and its shapes repeat, so a good score there
   does not transfer automatically to messy real code.
+- **The comparator numbers measure fit to a dataflow benchmark, not general tool quality.** Semgrep
+  and Bandit are both scored outside their design goal here: the Benchmark rewards cross-function
+  taint tracing and penalizes construct-matching, which is what both tools do by design and do fast.
+  The narrow claim the [three-way comparison](validation/owasp-benchmark-results.md) supports is that
+  SENTINEL's Python margin is a property of the task rather than an artifact of picking one
+  comparator — nothing more.
 - **The Juice Shop passes are coverage measures, not detection tests.** The 2026-07-19 pass derived its
   answer key from the app's own markers *before* the audit, so its 0.7750 recall is not comparable to
   the blind Benchmark figures. The 2026-07-20 pass fixed the ordering — scope drawn before any marker

@@ -106,13 +106,22 @@ Every version bump gets a [CHANGELOG.md](CHANGELOG.md) entry under a new heading
 
 1. Fork and branch from `main` (`feat/ssrf-catalog-entry`, `docs/rls-guide-fix`).
 2. Keep the change focused — one class, one playbook, or one doc per pull request.
-3. Run the repo's own checks before pushing:
+3. Run the repo's own checks before pushing — all of them, since CI runs all of them:
    ```bash
-   python scripts/check_repo.py   # links, anchors, class parity, secret shapes
+   python scripts/check_repo.py                # links, anchors, class parity, secret shapes
+   python scripts/check_standards_currency.py  # cited standards vs. latest editions
+   python scripts/check_schema.py              # findings schema + its worked example
+   python scripts/check_skill_package.py       # skill name, description limits, semver
+   python -m unittest discover -s validation -p 'test_*.py'   # scoring + schema conformance
    ```
-   This is the same script CI runs ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). It will
-   fail if you add a catalog class without a remediation, or vice versa — that invariant is enforced,
-   not merely requested. Also confirm no `.env*` is staged.
+   These are the same checks CI runs ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+   `check_repo.py` will fail if you add a catalog class without a remediation, or vice versa — that
+   invariant is enforced, not merely requested. Also confirm no `.env*` is staged.
+
+   Everything except the last line is standard-library-only. The test suite's schema-conformance
+   checks need `jsonschema` (`pip install 'jsonschema>=4.20'`); without it they skip locally, and CI
+   sets `SENTINEL_REQUIRE_JSONSCHEMA=1` so a missing validator there is a failure rather than a
+   silent pass.
 4. Reference the issue you opened, and describe how you verified any code you added actually blocks
    the attack it claims to.
 

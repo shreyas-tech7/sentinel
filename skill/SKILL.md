@@ -2,7 +2,7 @@
 name: security-audit
 description: Security and code-health audit framework for source code and architecture, especially rapidly built or AI-generated ("vibe-coded") artifacts. Use whenever the user asks to audit, security-review, pentest, threat-model, or harden code; mentions IDOR, broken authorization, exposed secrets, RLS, injection, XSS, CSRF, SSRF, insecure config, predictable tokens, architectural drift, race conditions, or dead code; asks whether an app is safe to hand to an autonomous agent; or wants mobile, browser-extension, bot/webhook, or CLI security. Also on a non-technical founder asking "is my app safe to launch" and on vibe-coding hardening that never mentions AI. Drives a six-phase review (inventory, trust boundaries, STRIDE, adversarial scan, regression audit, severity-rated remediation with drop-in code) across any language, framework, or artifact type — Node, Python, Go, Next.js, Rails, Supabase, Firebase, mobile, extensions, bots, CLIs. Trigger even when the user never says "audit" but asks whether code is secure.
 metadata:
-  version: "7.0.0"
+  version: "8.0.0"
 ---
 
 # Security Audit

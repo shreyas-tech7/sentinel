@@ -42,8 +42,20 @@ jobs:
       - name: Check findings schema
         run: python scripts/check_schema.py
 
-      # Unit tests for the validation scoring harness (precision/recall/F1).
+      # The only test dependency in the repo. check_schema.py above stays
+      # stdlib-only and runs regardless; this installs a real draft-2020-12
+      # validator so test_schema_conformance.py can check serialized findings
+      # against the contract with a validator rather than by hand.
+      - name: Install schema validator
+        run: python -m pip install --disable-pip-version-check "jsonschema>=4.20"
+
+      # Unit tests for the validation scoring harness (precision/recall/F1) and
+      # schema conformance of real serialized findings.
+      # SENTINEL_REQUIRE_JSONSCHEMA=1 turns a missing validator into a failure
+      # instead of a skip -- a green run must mean the check actually executed.
       - name: Validation harness tests
+        env:
+          SENTINEL_REQUIRE_JSONSCHEMA: "1"
         run: python -m unittest discover -s validation -p 'test_*.py'
 
       # Skill package rules: single root SKILL.md, kebab-case invariant name,
