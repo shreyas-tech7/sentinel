@@ -1,0 +1,19 @@
+{
+  "target": "juice-shop",
+  "commit": "1618a611b173b4bf114028e6e02549950606e29d",
+  "repo": "https://github.com/juice-shop/juice-shop",
+  "match_mode": "partial",
+  "source_of_truth": "Two independent sources, both verified by reading the pinned code: (1) the Juice Shop project's own in-source challenge markers — lines tagged '// vuln-code-snippet vuln-line <challenge>' mark the vulnerable lines the project itself documents; (2) direct code reading of endpoints whose flaws are visible without running the app (SSRF fetch, path-join sendFile, hardcoded RSA private key). Juice Shop's full vulnerability list is much larger than these labels; recall is therefore measured only against the labeled subset, and findings in unlabeled files are reported but not scored.",
+  "scan_scope": ["routes/", "lib/", "models/", "frontend/src/app/search-result/search-result.component.ts"],
+  "labels": {
+    "routes/search.ts": {"classes": ["sql_injection"], "note": "vuln-line marker: unionSqlInjectionChallenge — template literal into sequelize.query."},
+    "routes/login.ts": {"classes": ["sql_injection"], "note": "vuln-line marker: loginAdminChallenge et al. — req.body.email interpolated into sequelize.query."},
+    "routes/updateProductReviews.ts": {"classes": ["sql_injection"], "note": "vuln-line marker: noSqlReviewsChallenge — req.body.id used as a Mongo update filter."},
+    "frontend/src/app/search-result/search-result.component.ts": {"classes": ["xss"], "note": "vuln-line marker: restfulXssChallenge/localXssChallenge — bypassSecurityTrustHtml on product description and query param."},
+    "routes/profileImageUrlUpload.ts": {"classes": ["ssrf"], "note": "inspection: fetch(req.body.imageUrl) with no allowlist (the code even tracks its own abuse)."},
+    "routes/fileServer.ts": {"classes": ["path_traversal"], "note": "inspection: res.sendFile(path.resolve('ftp/', params.file)) — directory escape gated only by a '/'-in-name check and a null-byte filter that the project documents as bypassable."},
+    "routes/keyServer.ts": {"classes": ["path_traversal"], "note": "inspection: res.sendFile(path.resolve('encryptionkeys/', params.file)) with the same weak gate — serves the JWT signing keys."},
+    "routes/logfileServer.ts": {"classes": ["path_traversal"], "note": "inspection: res.sendFile(path.resolve('logs/', params.file)) with the same weak gate."},
+    "lib/insecurity.ts": {"classes": ["hardcoded_secrets"], "note": "inspection: RSA private key as a string literal in source — the JWT signing key."}
+  }
+}
