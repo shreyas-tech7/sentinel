@@ -50,10 +50,9 @@ desktop.ini
 
 # ---------------------------------------------------------------------------
 # Benchmarks: scan output and fetched practice targets are generated data,
-# never source. Results are reproducible via bench/ scripts.
+# never source. The chart SVGs ARE committed (BENCHMARKS.md embeds them);
+# regenerate them with bench/make_charts.py.
 # ---------------------------------------------------------------------------
 bench/targets/
 results/*.json
 results/*.md
-results/charts/*.svg
-!results/charts/.gitkeep
