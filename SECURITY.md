@@ -15,6 +15,27 @@ control. Findings are always paired with remediations; attack scenarios exist to
 and motivate the fix, not to weaponize. If a request would orient the tool toward attacking a
 third party, it is out of scope for this project.
 
+## Benchmark targets: what they are and are not
+
+The benchmark in [`bench/`](bench/) runs exclusively against **published, deliberately
+vulnerable practice targets**: the labeled sample corpus vendored in `bench/corpus/`, OWASP
+DVWA, OWASP Juice Shop, and OWASP WebGoat, cloned at pinned commits by
+[`bench/fetch_targets.sh`](bench/fetch_targets.sh). The rules that govern this:
+
+- **Source scanning only.** The targets are read as files. They are never installed, served,
+  deployed, or run as applications by any script in this repository.
+- **Nothing else is scanned by the benchmark.** The harness has no configuration to point it at
+  arbitrary hosts, and the Gauntlet-style variant generator only rewrites files from the labeled
+  corpus. If you extend the tooling, keep it that way.
+- **Variants stay in the lab.** Adversarial variants are generated from labeled practice
+  samples into temporary directories, scored, and deleted. They exist to measure detector
+  robustness, not to distribute bypass techniques; the techniques themselves (renaming
+  variables, inserting dead code) are trivial and documented in
+  [`bench/gauntlet/INTERFACE.md`](bench/gauntlet/INTERFACE.md).
+
+Using this project's tooling against systems without ownership or permission remains out of
+scope, exactly as above.
+
 ## Reporting a vulnerability *in this repository*
 
 This policy covers weaknesses in the SENTINEL project itself — for example, a documentation error
