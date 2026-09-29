@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="420" viewBox="0 0 860 420" font-family="Helvetica,Arial,sans-serif">
+<rect width="860" height="420" fill="white"/>
+<text x="210" y="26" font-size="16" font-weight="bold" fill="#111">Detection retention under adversarial variants (Gauntlet-style)</text>
+<line x1="210" y1="364.0" x2="836" y2="364.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="202" y="368.0" font-size="11" text-anchor="end" fill="#555">0.00</text>
+<line x1="210" y1="300.4" x2="836" y2="300.4" stroke="#e5e7eb" stroke-width="1"/>
+<text x="202" y="304.4" font-size="11" text-anchor="end" fill="#555">0.20</text>
+<line x1="210" y1="236.8" x2="836" y2="236.8" stroke="#e5e7eb" stroke-width="1"/>
+<text x="202" y="240.8" font-size="11" text-anchor="end" fill="#555">0.40</text>
+<line x1="210" y1="173.2" x2="836" y2="173.2" stroke="#e5e7eb" stroke-width="1"/>
+<text x="202" y="177.2" font-size="11" text-anchor="end" fill="#555">0.60</text>
+<line x1="210" y1="109.6" x2="836" y2="109.6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="202" y="113.6" font-size="11" text-anchor="end" fill="#555">0.80</text>
+<line x1="210" y1="46.0" x2="836" y2="46.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="202" y="50.0" font-size="11" text-anchor="end" fill="#555">1.00</text>
+<rect x="255.6" y="55.9" width="31.0" height="308.1" fill="#2563eb"/>
+<text x="271.1" y="51.9" font-size="10" text-anchor="middle" fill="#333">0.97</text>
+<text x="272.6" y="384" font-size="11" text-anchor="middle" fill="#111">source-indirection</text>
+<rect x="380.8" y="55.9" width="31.0" height="308.1" fill="#2563eb"/>
+<text x="396.3" y="51.9" font-size="10" text-anchor="middle" fill="#333">0.97</text>
+<text x="397.8" y="384" font-size="11" text-anchor="middle" fill="#111">source-indirection-2</text>
+<rect x="506.0" y="46.0" width="31.0" height="318.0" fill="#2563eb"/>
+<text x="521.5" y="42.0" font-size="10" text-anchor="middle" fill="#333">1.00</text>
+<text x="523.0" y="384" font-size="11" text-anchor="middle" fill="#111">dead-interlude</text>
+<rect x="631.2" y="46.0" width="31.0" height="318.0" fill="#2563eb"/>
+<text x="646.7" y="42.0" font-size="10" text-anchor="middle" fill="#333">1.00</text>
+<text x="648.2" y="384" font-size="11" text-anchor="middle" fill="#111">identifier-rename</text>
+<rect x="756.4" y="46.0" width="31.0" height="318.0" fill="#2563eb"/>
+<text x="771.9" y="42.0" font-size="10" text-anchor="middle" fill="#333">1.00</text>
+<text x="773.4" y="384" font-size="11" text-anchor="middle" fill="#111">comment-noise</text>
+<rect x="210" y="398" width="11" height="11" fill="#2563eb"/>
+<text x="226" y="408" font-size="11" fill="#333">retention</text>
+</svg>

@@ -1,0 +1,35 @@
+# Gitleaks configuration.
+#
+# This repository contains DELIBERATE fake credentials: SENTINEL's labeled
+# practice samples (bench/corpus/) must contain hardcoded-secret shapes or the
+# hardcoded-secrets detector has nothing to detect, and the test suite pins
+# those same shapes. Every allowlisted literal below is an obvious non-secret
+# (demo keys, placeholder AWS/Google/Stripe formats, RFC-style PEM blocks).
+# Nothing here is, or ever was, a real credential.
+#
+# The scans-of-record are still enforced: anything outside these paths fails
+# the build, and check_repo.py independently scans all tracked text.
+
+title = "sentinel-gitleaks-allowlist"
+
+[extend]
+# use the default ruleset
+
+[allowlist]
+description = "Deliberate fixture credentials in labeled practice samples and tests"
+paths = [
+  '''(^|/)bench/corpus/''',
+  '''(^|/)tests/''',
+  '''(^|/)results/''',
+  '''(^|/)bench/gauntlet/''',
+]
+regexes = [
+  # the canonical gitleaks/AWS docs example key, used in tests and corpus
+  '''AKIAIOSFODNN7DEMO''',
+  # Google API-key shaped demo literals in fixtures
+  '''AIzaSy[A-Za-z0-9_-]{0,40}''',
+  # placeholder Stripe keys in fixtures
+  '''sk_(test|live)_DEMO''',
+  # demo PEM blocks in fixtures (no real key material)
+  '''BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----\\n[A-Za-z0-9+/=\\s]*(?:demo|DEMO|example|NOTAKEY)''',
+]
