@@ -8,6 +8,69 @@ vulnerability catalog or the OWASP / API / LLM / CWE framework-mapping tables ch
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] — 2026-09-28
+
+Turns SENTINEL from a scanner into a **benchmarked** scanner: a reproducible
+harness that measures detection against labeled ground truth, a robustness
+harness that measures retention under adversarial variants, and honest
+documentation of every miss and false positive. No rule behavior changed in
+this release.
+
+### Added
+- **Benchmark harness** ([`bench/run_benchmark.py`](bench/run_benchmark.py)) —
+  scores SENTINEL against hand-labeled ground truth
+  (`bench/groundtruth/*.json`) for four practice targets: the vendored 46-file
+  labeled corpus (SQL injection, XSS, command injection, path traversal,
+  deserialization, hardcoded secrets, SSRF — PHP/Python/JS/TS/Java/Go), DVWA,
+  OWASP Juice Shop, and OWASP WebGoat at pinned commits
+  ([`bench/fetch_targets.sh`](bench/fetch_targets.sh)). Emits TP/FP/FN,
+  precision, recall, F1 per class and overall to `results/` (JSON + Markdown
+  table), with the scanned target commit recorded for reproducibility.
+  Practice targets only, source scanning only — see [SECURITY.md](SECURITY.md).
+- **Robustness harness** ([`bench/run_robustness.py`](bench/run_robustness.py))
+  + **Gauntlet interface** ([`bench/gauntlet/INTERFACE.md`](bench/gauntlet/INTERFACE.md))
+  with a bundled fallback mutator. Measures detection retention on 157
+  adversarial variants of the labeled corpus (source indirection ×1/×2, dead
+  interludes, identifier renames, comment noise; deterministic per seed).
+  Measured retention: 99% (155/157) — the two misses are documented in
+  [BENCHMARKS.md](BENCHMARKS.md), not patched.
+- **Chart generator** ([`bench/make_charts.py`](bench/make_charts.py)) —
+  dependency-free SVG charts rendered from the results JSON, so figures and
+  docs cannot drift apart.
+- **Test suite** (`tests/`, 86 tests) — per-rule vulnerable/clean pairs across
+  five languages, taint-model unit tests, scanner/CLI end-to-end, benchmark
+  scorer regression guard (corpus must stay 1.00/1.00), and mutator contract
+  tests. Runs in seconds with `python -m unittest discover -s tests`; a rule
+  regression fails loudly.
+- **[BENCHMARKS.md](BENCHMARKS.md)** — methodology, pinned targets, per-class
+  and overall results, the complete list of misses and false positives with
+  root causes, robustness numbers, and limitations (file-level matching,
+  partial ground truth, storage-borne taint out of scope, in-sample corpus).
+
+### Fixed
+- JS/TS taint sources for Angular/Vue-style query parameters and
+  `window.location.*`; TypeScript-typed assignments; multi-line assignments in
+  Java.
+- SQLi rule: trailing-punctuation handling in extracted arguments; NoSQL
+  trigger fires on direct request references in filter documents.
+- Secrets rule: name-based hits suppressed inside SQL string literals and
+  comparison contexts (`password === "..."` is not a hardcoded secret) while
+  keeping Go `:=` assignments flagged.
+- Path traversal: allowlist guards (`in_array`, `startsWith`, `.includes()`)
+  recognized as controls.
+
+## [4.0.0] — 2026-09-20
+
+Adds the deterministic analyzer: a standard-library Python package
+(`sentinel/`) implementing the automatable core of the methodology — a taint
+model (sources, propagation, string-context tracking, control recognition)
+plus seven rules (SQL injection incl. NoSQL operator injection, XSS, command
+injection, path traversal, insecure deserialization, hardcoded secrets, SSRF)
+over PHP, Python, JavaScript/TypeScript, Java, and Go. Runs as
+`python -m sentinel scan PATH [--table] [--json OUT] [--include GLOB]`; every
+finding carries rule id, CWE, severity, confidence, the flagged line, and a
+remediation reference. The skill, prompts, catalog, and examples are unchanged.
+
 ## [3.0.0] — 2026-07-13
 
 Broadens SENTINEL from a Next.js/Supabase-plus-LLM tool into a framework for **any language, framework,

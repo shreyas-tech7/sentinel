@@ -47,3 +47,13 @@ desktop.ini
 .vscode/
 *.swp
 *~
+
+# ---------------------------------------------------------------------------
+# Benchmarks: scan output and fetched practice targets are generated data,
+# never source. Results are reproducible via bench/ scripts.
+# ---------------------------------------------------------------------------
+bench/targets/
+results/*.json
+results/*.md
+results/charts/*.svg
+!results/charts/.gitkeep

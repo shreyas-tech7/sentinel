@@ -1,0 +1,40 @@
+{
+  "target": "dvwa",
+  "commit": "b496a5d3de6b967410155e1b7d3e51e9d035eb22",
+  "repo": "https://github.com/digininja/DVWA",
+  "match_mode": "complete",
+  "source_of_truth": "DVWA's documented design (low/medium/high are vulnerable by construction, impossible.php is remediated), verified by reading every labeled file at the pinned commit. Secondary classes are recorded where the code genuinely contains them (e.g. the SQLi pages reflect the unsanitized id into HTML; the exec pages reflect command output).",
+  "scan_scope": ["sqli*/source/*.php", "exec/source/*.php", "fi/source/*.php", "fi/index.php", "xss_r/source/*.php", "xss_s/source/*.php"],
+  "excluded": [
+    "xss_d/: DOM-based XSS lives in inline client-side JavaScript in index.php's <select> markup, outside this analyzer's server-side scope. Excluded rather than counted as designed-out-of-scope misses.",
+    "brute/, captcha/, csrf/, weak_id/, upload/, authbypass/, bac/, csp/, open_redirect/, cryptography/, javascript/, api/: vulnerability classes outside the seven benchmark classes.",
+    "vulnerabilities/fi/source/{low,medium,high}.php are labeled clean because they only ASSIGN the request parameter; the include() sink lives in fi/index.php. The source/sink split across files is a documented analyzer limitation and produces the one path-traversal false negative for this target."
+  ],
+  "labels": {
+    "sqli/source/low.php": {"classes": ["sql_injection", "xss"], "note": "mysqli_query with $id concatenated into the string; $id also reflected into an HTML <pre> block."},
+    "sqli/source/medium.php": {"classes": ["sql_injection", "xss"], "note": "mysqli_real_escape_string applied but interpolated UNQUOTED into the query — still injectable; reflected into HTML."},
+    "sqli/source/high.php": {"classes": ["sql_injection", "xss"], "note": "id taken from $_SESSION (cookie-seeded), spliced into the query; reflected into HTML."},
+    "sqli/source/impossible.php": {"classes": [], "note": "PDO prepared statement with bound :id parameter plus intval check."},
+    "sqli_blind/source/low.php": {"classes": ["sql_injection"], "note": "boolean-blind query with $id spliced into the string."},
+    "sqli_blind/source/medium.php": {"classes": ["sql_injection"], "note": "same shape, cookie source."},
+    "sqli_blind/source/high.php": {"classes": ["sql_injection"], "note": "same shape, session source."},
+    "sqli_blind/source/impossible.php": {"classes": [], "note": "prepared statement, bound parameter, CSRF token."},
+    "exec/source/low.php": {"classes": ["command_injection", "xss"], "note": "shell_exec('ping ' . $target); command output (contains attacker string) reflected into HTML."},
+    "exec/source/medium.php": {"classes": ["command_injection", "xss"], "note": "blacklist character substitution only."},
+    "exec/source/high.php": {"classes": ["command_injection", "xss"], "note": "wider blacklist, still bypassable per DVWA documentation."},
+    "exec/source/impossible.php": {"classes": [], "note": "octet split with is_numeric checks before reassembly."},
+    "xss_r/source/low.php": {"classes": ["xss"], "note": "request value concatenated into an HTML string echoed by the page."},
+    "xss_r/source/medium.php": {"classes": ["xss"], "note": "str_replace('<script>') only — tag-less vectors work."},
+    "xss_r/source/high.php": {"classes": ["xss"], "note": "preg_replace script-strip only — tag-less vectors work."},
+    "xss_r/source/impossible.php": {"classes": [], "note": "htmlspecialchars on output plus anti-CSRF token."},
+    "xss_s/source/low.php": {"classes": ["xss", "sql_injection"], "note": "raw $_POST spliced into an INSERT (SQLi) and rendered unescaped on the guestbook view (stored XSS, sink in a file outside scope)."},
+    "xss_s/source/medium.php": {"classes": ["xss"], "note": "name field: script-strip only, stored XSS still reachable via the out-of-scope view; INSERT is escaped-and-quoted so not SQLi."},
+    "xss_s/source/high.php": {"classes": ["xss"], "note": "message htmlspecialchars-encoded, name only script-stripped — stored XSS reachable via the out-of-scope view; INSERT escaped-and-quoted."},
+    "xss_s/source/impossible.php": {"classes": [], "note": "htmlspecialchars + strip_tags + CSRF token."},
+    "fi/source/low.php": {"classes": [], "note": "assigns $file only; sink is in fi/index.php (see excluded)."},
+    "fi/source/medium.php": {"classes": [], "note": "assigns $file only; sink is in fi/index.php (see excluded)."},
+    "fi/source/high.php": {"classes": [], "note": "assigns $file only; sink is in fi/index.php (see excluded)."},
+    "fi/source/impossible.php": {"classes": [], "note": "strict allowlist (in_array) on the page parameter."},
+    "fi/index.php": {"classes": ["path_traversal"], "note": "include($file) where $file is assigned in the source/ files included above — the LFI sink. Analyzer is file-scoped: expected false negative."}
+  }
+}
